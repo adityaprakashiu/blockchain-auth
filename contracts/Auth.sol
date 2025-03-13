@@ -103,4 +103,13 @@ contract Auth {
     function _generateSalt(address userAddress) private view returns (bytes32) {
         return keccak256(abi.encodePacked(block.timestamp, userAddress, block.prevrandao));
     }
+
+    function getUserDetails(address userAddress) public view returns (address, string memory, string memory) {
+        require(users[userAddress].userAddress != address(0), "User not found");
+    
+        string memory role = users[userAddress].role == Role.Admin ? "Admin" : "User";
+    
+        return (users[userAddress].userAddress, role, "User details retrieved successfully");
+    }
+
 }
