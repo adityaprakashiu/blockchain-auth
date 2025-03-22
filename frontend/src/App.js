@@ -8,6 +8,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [account, setAccount] = useState("");
+  const [balance, setBalance] = useState("");
 
   // Check MetaMask connection on page load
   useEffect(() => {
@@ -17,6 +18,7 @@ function App() {
         if (accounts.length > 0) {
           setAccount(accounts[0]);
           setIsConnected(true);
+          await fetchBalance(accounts[0]);
           setMessage(`🦊 Connected: ${accounts[0]}`);
         }
       }
@@ -29,10 +31,22 @@ function App() {
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
       setAccount(accounts[0]);
       setIsConnected(true);
+      await fetchBalance(accounts[0]);
       setMessage(`✅ Wallet connected: ${accounts[0]}`);
     } catch (error) {
       console.error("❌ Error connecting:", error);
       setMessage("❌ MetaMask connection failed.");
+    }
+  };
+
+  const fetchBalance = async (userAccount) => {
+    try {
+      const provider = new window.ethers.BrowserProvider(window.ethereum);
+      const balance = await provider.getBalance(userAccount);
+      setBalance(window.ethers.formatEther(balance));
+    } catch (error) {
+      console.error("❌ Error fetching balance:", error);
+      setBalance("N/A");
     }
   };
 
@@ -68,6 +82,7 @@ function App() {
       const isLoggedIn = await contract.attemptLogin(password);
       if (isLoggedIn) {
         setMessage("✅ User logged in successfully!");
+        await fetchBalance(account);
       } else {
         setMessage("❌ Invalid credentials.");
       }
@@ -84,7 +99,10 @@ function App() {
       <h1>🔐 Blockchain Auth with MetaMask</h1>
 
       {isConnected ? (
-        <p>🦊 Connected: {account}</p>
+        <div>
+          <p>🦊 Connected: {account}</p>
+          <p>💰 Balance: {balance} ETH</p>
+        </div>
       ) : (
         <button onClick={connectWallet}>
           Connect Wallet
