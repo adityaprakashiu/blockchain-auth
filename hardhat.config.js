@@ -10,7 +10,7 @@ module.exports = {
     },
     // Localhost network (for running a node locally)
     localhost: {
-      url: "http://127.0.0.1:8545", // Local node URL
+      url: "http://127.0.0.1:8546", // Changed to port 8546
       chainId: 31337, // Same as Hardhat
     },
   },

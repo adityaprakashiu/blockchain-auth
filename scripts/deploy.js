@@ -1,4 +1,4 @@
-const hre = require("hardhat");// hardhat ke lib import ke liye
+const hre = require("hardhat"); // Hardhat libraries
 const fs = require("fs");
 const path = require("path"); // Ensure correct file path handling
 
@@ -6,7 +6,11 @@ async function main() {
     try {
         console.log("🚀 Starting deployment...");
 
-        const Auth = await hre.ethers.getContractFactory("Auth");
+        // Explicitly connect to the localhost network with port 8546
+        const provider = new hre.ethers.JsonRpcProvider("http://127.0.0.1:8546");
+        const signer = await provider.getSigner();
+
+        const Auth = await hre.ethers.getContractFactory("Auth", signer);
         const auth = await Auth.deploy();
         await auth.waitForDeployment();
         const contractAddress = await auth.getAddress();
@@ -45,18 +49,3 @@ async function main() {
 }
 
 main();
-
-
-
-
-// This scripts helps to load Auth contract and deploy it on the blockcahin 
-// some functions to test deployment
-//await Auth.registerUser("newuser_password"); // to reg new user
-//await Auth.connect(await ethers.getSigner(1)).getUserRole(); // to check user role
-//await Auth.connect(await ethers.getSigner(1)).attemptLogin("newuser_password"); // to login
-//await Auth.assignAdmin(await ethers.getSigner(1).getAddress()); // to assign admin role to other
-//await Auth.updatePassword("old_password", "new_secure_password"); // to test updating password
-
-
-  
-
