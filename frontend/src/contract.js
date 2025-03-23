@@ -1,4 +1,4 @@
-import { JsonRpcProvider, BrowserProvider, Contract } from "ethers";  // ✅ Updated imports
+import { BrowserProvider, Contract } from "ethers";  // ✅ Updated imports
 import AuthABI from "./abi/Auth.json";  // Import ABI
 
 // ✅ Replace with your deployed contract address
@@ -10,8 +10,7 @@ export const getContract = async () => {
     throw new Error("🦊 Please install MetaMask.");
   }
 
-  // ✅ Use the new import structure
-  const provider = new JsonRpcProvider("http://localhost:8545");   // For local Hardhat node
+  // Use the MetaMask provider and signer
   const browserProvider = new BrowserProvider(window.ethereum);     // For MetaMask
   const signer = await browserProvider.getSigner();
   

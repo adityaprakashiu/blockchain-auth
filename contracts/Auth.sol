@@ -1,30 +1,34 @@
 // SPDX-License-Identifier: MIT
-// SPDX ka matlab Software Package Data Exchange
 pragma solidity ^0.8.0;
 
 contract Auth {
-    enum Role {User, Admin} // Role-based access control
+    enum Role { User, Admin, SuperAdmin } // Added SuperAdmin role for more granularity
 
     struct User {
-        string username;       // Added username field
-        address userAddress;
-        bytes32 passwordHash;
-        bytes32 salt;
-        Role role;
+        string username;       // Username for user identification
+        address userAddress;   // Wallet address of the user
+        Role role;             // Role for RBAC
+        uint256 lastLogin;     // Timestamp of last successful login (for audit logging)
     }
 
     mapping(address => User) private users;
     address public contractOwner;
 
+    // Events for audit logging and frontend interaction
     event UserRegistered(address indexed user, string username, Role role);
-    event UserLoggedIn(address indexed user, string username);
+    event LoginAttempt(address indexed user, bool success, string message);
     event RoleChanged(address indexed user, Role newRole);
-    event PasswordUpdated(address indexed user);
-    event RoleRevoked(address indexed user);
+    event RoleRevoked(address indexed user, Role oldRole);
     event UserRemoved(address indexed user);
+    event SignatureVerified(address indexed user, bool success);
 
     modifier onlyAdmin() {
-        require(users[msg.sender].role == Role.Admin, "Access denied: Admins only");
+        require(users[msg.sender].role == Role.Admin || users[msg.sender].role == Role.SuperAdmin, "Access denied: Admins only");
+        _;
+    }
+
+    modifier onlySuperAdmin() {
+        require(users[msg.sender].role == Role.SuperAdmin, "Access denied: SuperAdmins only");
         _;
     }
 
@@ -35,102 +39,124 @@ contract Auth {
 
     constructor() {
         contractOwner = msg.sender;
-        bytes32 salt = _generateSalt(msg.sender);
-        
-        // Register contract owner as Admin with default username
-        users[msg.sender] = User("Owner", msg.sender, keccak256(abi.encodePacked("admin123", salt)), salt, Role.Admin);
-        
-        emit UserRegistered(msg.sender, "Owner", Role.Admin);
+        // Register contract owner as SuperAdmin with default username
+        users[msg.sender] = User("Owner", msg.sender, Role.SuperAdmin, block.timestamp);
+        emit UserRegistered(msg.sender, "Owner", Role.SuperAdmin);
     }
 
     // Register User with Username
-    function registerUser(string memory username, string memory password) public {
+    function registerUser(string memory username) public {
         require(users[msg.sender].userAddress == address(0), "User already registered");
         require(bytes(username).length >= 3, "Username must be at least 3 characters");
-        require(bytes(password).length >= 6, "Password must be at least 6 characters");
 
-        bytes32 salt = _generateSalt(msg.sender);
-        users[msg.sender] = User(username, msg.sender, keccak256(abi.encodePacked(password, salt)), salt, Role.User);
-        
+        users[msg.sender] = User(username, msg.sender, Role.User, 0);
         emit UserRegistered(msg.sender, username, Role.User);
     }
 
-    // Login with Username Emission
-    function attemptLogin(string memory password) public returns (string memory) {
+    // Verify Signature for Login (Wallet-Based Authentication)
+    function attemptLogin(string memory message, bytes memory signature) public returns (bool) {
         require(users[msg.sender].userAddress != address(0), "User not registered");
 
-        if (users[msg.sender].passwordHash == keccak256(abi.encodePacked(password, users[msg.sender].salt))) {
-            emit UserLoggedIn(msg.sender, users[msg.sender].username);
-            return users[msg.sender].username;  // Return username on successful login
+        // Verify the signature
+        bool isValid = verifySignature(msg.sender, message, signature);
+        if (!isValid) {
+            emit LoginAttempt(msg.sender, false, "Invalid signature");
+            return false;
         }
-        revert("Incorrect password");
-    }
 
-    // Update Password
-    function updatePassword(string memory oldPassword, string memory newPassword) public onlyRegisteredUser {
-        require(keccak256(abi.encodePacked(oldPassword, users[msg.sender].salt)) == users[msg.sender].passwordHash, "Incorrect old password");
-        require(bytes(newPassword).length >= 6, "Password must be at least 6 characters");
-
-        users[msg.sender].salt = _generateSalt(msg.sender);
-        users[msg.sender].passwordHash = keccak256(abi.encodePacked(newPassword, users[msg.sender].salt));
-        
-        emit PasswordUpdated(msg.sender);
+        // Update last login timestamp
+        users[msg.sender].lastLogin = block.timestamp;
+        emit LoginAttempt(msg.sender, true, "Login successful");
+        emit SignatureVerified(msg.sender, true);
+        return true;
     }
 
     // Assign Admin Role
-    function assignAdmin(address userAddress) public {
-        require(msg.sender == contractOwner, "Only contract owner can assign Admin role");
+    function assignAdmin(address userAddress) public onlySuperAdmin {
         require(users[userAddress].userAddress != address(0), "User does not exist");
+        require(users[userAddress].role != Role.SuperAdmin, "Cannot change SuperAdmin role");
 
         users[userAddress].role = Role.Admin;
-        
         emit RoleChanged(userAddress, Role.Admin);
     }
 
-    // Revoke Admin Role
-    function revokeAdminRole(address userAddress) public {
-        require(msg.sender == contractOwner, "Only contract owner can revoke Admin role");
-        require(users[userAddress].role == Role.Admin, "User is not an Admin");
+    // Assign SuperAdmin Role (Only by contract owner)
+    function assignSuperAdmin(address userAddress) public {
+        require(msg.sender == contractOwner, "Only contract owner can assign SuperAdmin role");
+        require(users[userAddress].userAddress != address(0), "User does not exist");
+
+        users[userAddress].role = Role.SuperAdmin;
+        emit RoleChanged(userAddress, Role.SuperAdmin);
+    }
+
+    // Revoke Admin or SuperAdmin Role
+    function revokeAdminRole(address userAddress) public onlySuperAdmin {
+        require(users[userAddress].userAddress != address(0), "User does not exist");
+        require(users[userAddress].role == Role.Admin || users[userAddress].role == Role.SuperAdmin, "User is not an Admin or SuperAdmin");
         require(userAddress != contractOwner, "Cannot revoke contract owner's role");
 
+        Role oldRole = users[userAddress].role;
         users[userAddress].role = Role.User;
-        
-        emit RoleRevoked(userAddress);
+        emit RoleRevoked(userAddress, oldRole);
     }
 
     // Delete User
     function deleteUser(address userAddress) public onlyAdmin {
         require(users[userAddress].userAddress != address(0), "User does not exist");
+        require(users[userAddress].role != Role.SuperAdmin, "Cannot delete SuperAdmin accounts");
 
         if (users[userAddress].role == Role.Admin) {
-            require(msg.sender == contractOwner, "Only contract owner can delete Admin accounts");
+            require(users[msg.sender].role == Role.SuperAdmin, "Only SuperAdmins can delete Admin accounts");
         }
 
-        delete users[userAddress]; 
+        delete users[userAddress];
         emit UserRemoved(userAddress);
     }
 
     // Get User Role
     function getUserRole() public view onlyRegisteredUser returns (string memory) {
-        return users[msg.sender].role == Role.Admin ? "Admin" : "User";
+        if (users[msg.sender].role == Role.SuperAdmin) return "SuperAdmin";
+        if (users[msg.sender].role == Role.Admin) return "Admin";
+        return "User";
     }
 
-    // Updated Get User Details to Include Username
-    function getUserDetails(address userAddress) public view returns (string memory, address, string memory, string memory) {
+    // Get User Details (Including Last Login for Audit)
+    function getUserDetails(address userAddress) public view returns (string memory username, address userAddr, string memory role, uint256 lastLogin, string memory message) {
         require(users[userAddress].userAddress != address(0), "User not found");
 
-        string memory role = users[userAddress].role == Role.Admin ? "Admin" : "User";
+        string memory userRole = users[userAddress].role == Role.SuperAdmin ? "SuperAdmin" : users[userAddress].role == Role.Admin ? "Admin" : "User";
 
         return (
             users[userAddress].username,
             users[userAddress].userAddress,
-            role,
+            userRole,
+            users[userAddress].lastLogin,
             "User details retrieved successfully"
         );
     }
 
-    // Generate Salt
-    function _generateSalt(address userAddress) private view returns (bytes32) {
-        return keccak256(abi.encodePacked(block.timestamp, userAddress, block.prevrandao));
+    // Verify Signature (For Wallet-Based Authentication)
+    function verifySignature(address user, string memory message, bytes memory signature) public pure returns (bool) {
+        bytes32 messageHash = keccak256(abi.encodePacked(message));
+        bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
+        address signer = recoverSigner(ethSignedMessageHash, signature);
+        return signer == user;
+    }
+
+    // Recover Signer from Signature
+    function recoverSigner(bytes32 messageHash, bytes memory signature) internal pure returns (address) {
+        (uint8 v, bytes32 r, bytes32 s) = splitSignature(signature);
+        return ecrecover(messageHash, v, r, s);
+    }
+
+    // Split Signature into v, r, s Components
+    function splitSignature(bytes memory sig) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
+        require(sig.length == 65, "Invalid signature length");
+        assembly {
+            r := mload(add(sig, 32))
+            s := mload(add(sig, 64))
+            v := byte(0, mload(add(sig, 96)))
+        }
+        if (v < 27) v += 27;
     }
 }
