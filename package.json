@@ -3,11 +3,15 @@
   "version": "1.0.0",
   "scripts": {
     "test": "npx hardhat test",
-    "start": "npx hardhat node",
+    "start": "concurrently \"npx hardhat node\" \"react-scripts start\"",
     "deploy": "npx hardhat run scripts/deploy.js --network localhost"
   },
   "dependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "hardhat": "^2.22.19"
+    "hardhat": "^2.22.19",
+    "react-scripts": "^5.0.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
   }
 }
