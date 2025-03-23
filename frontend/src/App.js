@@ -216,6 +216,7 @@ const App = () => {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+<<<<<<< HEAD
   const [walletAddress, setWalletAddress] = useState(''); // Formatted address for display
   const [fullWalletAddress, setFullWalletAddress] = useState(''); // Full address for contract calls
   const [balance, setBalance] = useState('');
@@ -225,7 +226,9 @@ const App = () => {
   const [otp, setOtp] = useState(''); // User-entered OTP
   const [generatedOtp, setGeneratedOtp] = useState(''); // Generated OTP
 
+
   useEffect(() => {
+<<<<<<< HEAD
     const connectWallet = async () => {
       if (window.ethereum) {
         try {
@@ -275,6 +278,7 @@ const App = () => {
     connectWallet();
   }, []);
 
+<<<<<<< HEAD
   const generateOtp = () => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     return otp;
@@ -314,6 +318,7 @@ const App = () => {
     setIsLoading(true);
     setError('');
     try {
+<<<<<<< HEAD
       if (!window.ethereum) throw new Error('MetaMask is not installed');
       if (!fullWalletAddress) throw new Error('Please connect your wallet first');
       if (!isRegistered) throw new Error('Please register first');
@@ -407,6 +412,7 @@ const App = () => {
   };
 
   return (
+<<<<<<< HEAD
     <Router>
       <Routes>
         <Route
