@@ -7,7 +7,7 @@ async function main() {
         console.log("🚀 Starting deployment...");
 
         // Explicitly connect to the localhost network with port 8546
-        const provider = new hre.ethers.JsonRpcProvider("http://127.0.0.1:8546");
+        const provider = new hre.ethers.JsonRpcProvider("http://127.0.0.1:8545");
         const signer = await provider.getSigner();
 
         const Auth = await hre.ethers.getContractFactory("Auth", signer);
