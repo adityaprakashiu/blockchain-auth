@@ -1,73 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
-import { FaUserPlus, FaKey, FaLock, FaWallet, FaGithub, FaTwitter, FaUser } from 'react-icons/fa';
 import { ethers } from 'ethers';
+import Header from './Header';
 import AdminDashboard from './AdminDashboard';
 import Profile from './Profile';
+import About from './About';
+import Contact from './Contact';
+import PrivacyPolicy from './PrivacyPolicy';
 import AuthABI from './abi/AuthABI.json';
 import deployed from './deployed.json';
+// Import the required icons from react-icons/fa
+import { FaGithub, FaTwitter, FaUserPlus, FaKey } from 'react-icons/fa';
 
 const contractAddress = deployed.Auth;
 const contractABI = AuthABI.abi;
 
-const Header = ({ walletAddress, fullWalletAddress, handleDisconnect, handleConnect, isConnecting }) => {
-  console.log('Rendering Header with walletAddress:', walletAddress);
-  return (
-    <header className="bg-gray-800 text-gray-200 p-4 flex justify-between items-center shadow-md">
-      <div className="flex items-center space-x-2">
-        <FaLock className="text-xl text-gray-400" />
-        <h1 className="text-xl font-medium">Blockchain Authentication</h1>
-      </div>
-      <div className="flex items-center space-x-3">
-        {walletAddress ? (
-          <>
-            <span className="text-sm bg-gray-700 px-3 py-1 rounded-full">{walletAddress}</span>
-            <Link to="/profile" className="text-sm hover:text-gray-200 transition-colors duration-200 flex items-center space-x-1">
-              <FaUser /> <span>Profile</span>
-            </Link>
-            <Link to="/admin" className="text-sm hover:text-gray-200 transition-colors duration-200">
-              Admin Dashboard
-            </Link>
-            <button
-              onClick={handleDisconnect}
-              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm transition-all duration-200"
-              aria-label="Disconnect wallet"
-            >
-              Disconnect
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={handleConnect}
-            className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded-md text-sm flex items-center space-x-1 transition-all duration-200"
-            aria-label="Connect wallet"
-            disabled={isConnecting}
-          >
-            {isConnecting ? 'Connecting...' : (
-              <>
-                <FaWallet />
-                <span>Connect Wallet</span>
-              </>
-            )}
-          </button>
-        )}
-      </div>
-    </header>
-  );
-};
-
 const Footer = () => {
   console.log('Rendering Footer');
   return (
-    <footer className="bg-gray-800 text-gray-400 p-4 shadow-md">
+    <footer className="bg-gradient-to-r from-gray-800 to-gray-700 text-gray-400 p-4 shadow-md">
       <div className="flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
         <div className="text-sm">
-          © {new Date().getFullYear()} Blockchain Authentication
+          © {new Date().getFullYear()} Decentralized Access Control
         </div>
         <div className="flex space-x-4">
-          <a href="/about" className="text-sm hover:text-gray-200 transition-colors duration-200" aria-label="About page">About</a>
-          <a href="/contact" className="text-sm hover:text-gray-200 transition-colors duration-200" aria-label="Contact page">Contact</a>
-          <a href="/privacy" className="text-sm hover:text-gray-200 transition-colors duration-200" aria-label="Privacy Policy page">Privacy Policy</a>
+          <Link to="/about" className="text-sm hover:text-gray-200 transition-colors duration-200" aria-label="About page">About</Link>
+          <Link to="/contact" className="text-sm hover:text-gray-200 transition-colors duration-200" aria-label="Contact page">Contact</Link>
+          <Link to="/privacy" className="text-sm hover:text-gray-200 transition-colors duration-200" aria-label="Privacy Policy page">Privacy Policy</Link>
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="text-sm hover:text-gray-200 transition-colors duration-200"
@@ -93,18 +52,23 @@ const Footer = () => {
 const Home = ({ walletAddress, fullWalletAddress, handleDisconnect, handleConnect, handleRegister, handleLogin, username, setUsername, error, setError, isLoading, setIsLoading, isRegistered, balance, showBalance, setShowBalance, showOTPModal, setShowOTPModal, otp, setOtp, handleOtpSubmit, handleOtpCancel, generatedOtp, isConnecting }) => {
   console.log('Rendering Home with state:', { walletAddress, username, error, isLoading, isRegistered, showOTPModal });
   return (
-    <div className="flex flex-col min-h-screen bg-gray-900">
-      <Header walletAddress={walletAddress} fullWalletAddress={fullWalletAddress} handleDisconnect={handleDisconnect} handleConnect={handleConnect} isConnecting={isConnecting} />
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
+      <Header
+        walletAddress={walletAddress}
+        handleDisconnect={handleDisconnect}
+        handleConnect={handleConnect}
+        isConnecting={isConnecting}
+      />
       <div className="flex flex-col items-center justify-center flex-grow p-6">
-        <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-sm">
-          <h1 className="text-2xl font-semibold text-center mb-6 text-gray-200">Blockchain Authentication</h1>
+        <div className="bg-gradient-to-r from-gray-800 to-gray-700 p-6 rounded-lg shadow-lg w-full max-w-sm">
+          <h1 className="text-2xl font-semibold text-center mb-6 text-gray-200">Decentralized Access Control</h1>
           
           <div className="mb-4">
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-200 placeholder-gray-400"
+              className="w-full p-3 bg-gradient-to-r from-gray-700 to-gray-600 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-200 placeholder-gray-400"
               placeholder="Enter username"
               aria-label="Enter your username"
             />
@@ -121,7 +85,7 @@ const Home = ({ walletAddress, fullWalletAddress, handleDisconnect, handleConnec
           <div className="flex flex-col space-y-3 mb-6">
             <button
               onClick={handleRegister}
-              className="w-full bg-gray-600 hover:bg-gray-500 text-gray-200 p-3 rounded-md flex items-center justify-center text-sm transition-all duration-200"
+              className="w-full bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-500 hover:to-gray-400 text-gray-200 p-3 rounded-md flex items-center justify-center text-sm transition-all duration-200"
               aria-label="Register a new account"
               disabled={isLoading || isRegistered}
             >
@@ -133,7 +97,7 @@ const Home = ({ walletAddress, fullWalletAddress, handleDisconnect, handleConnec
             </button>
             <button
               onClick={handleLogin}
-              className="w-full bg-gray-600 hover:bg-gray-500 text-gray-200 p-3 rounded-md flex items-center justify-center text-sm transition-all duration-200"
+              className="w-full bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-500 hover:to-gray-400 text-gray-200 p-3 rounded-md flex items-center justify-center text-sm transition-all duration-200"
               aria-label="Log in to your account"
               disabled={isLoading}
             >
@@ -165,7 +129,7 @@ const Home = ({ walletAddress, fullWalletAddress, handleDisconnect, handleConnec
               <div className="mt-4">
                 <button
                   onClick={handleDisconnect}
-                  className="bg-red-500 hover:bg-red-600 text-white p-3 rounded-md w-full transition-all duration-200"
+                  className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white p-3 rounded-md w-full transition-all duration-200"
                   aria-label="Disconnect wallet"
                 >
                   Disconnect Wallet
@@ -177,7 +141,7 @@ const Home = ({ walletAddress, fullWalletAddress, handleDisconnect, handleConnec
 
         {showOTPModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-sm">
+            <div className="bg-gradient-to-r from-gray-800 to-gray-700 p-6 rounded-lg shadow-lg w-full max-w-sm">
               <h2 className="text-xl font-semibold text-center mb-4 text-gray-200">Enter OTP</h2>
               <p className="text-gray-400 text-center mb-4">
                 An OTP has been generated. For this demo, the OTP is: <strong>{generatedOtp}</strong>
@@ -187,21 +151,21 @@ const Home = ({ walletAddress, fullWalletAddress, handleDisconnect, handleConnec
                 type="text"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-200 placeholder-gray-400 mb-4"
+                className="w-full p-3 bg-gradient-to-r from-gray-700 to-gray-600 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-200 placeholder-gray-400 mb-4"
                 placeholder="Enter OTP"
                 aria-label="Enter OTP"
               />
               <div className="flex space-x-3">
                 <button
                   onClick={handleOtpSubmit}
-                  className="w-full bg-green-600 hover:bg-green-500 text-white p-3 rounded-md text-sm transition-all duration-200"
+                  className="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white p-3 rounded-md text-sm transition-all duration-200"
                   aria-label="Submit OTP"
                 >
                   Submit
                 </button>
                 <button
                   onClick={handleOtpCancel}
-                  className="w-full bg-red-500 hover:bg-red-600 text-white p-3 rounded-md text-sm transition-all duration-200"
+                  className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white p-3 rounded-md text-sm transition-all duration-200"
                   aria-label="Cancel OTP"
                 >
                   Cancel
@@ -664,6 +628,9 @@ const App = () => {
           path="/profile"
           element={<Profile walletAddress={walletAddress} fullWalletAddress={fullWalletAddress} />}
         />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
       </Routes>
     </Router>
   );
