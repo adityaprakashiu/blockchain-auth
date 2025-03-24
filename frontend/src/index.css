@@ -2,10 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Keep your existing styles */
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Custom styles */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -15,4 +18,49 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Fade-in animation for the login card */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Gradient border for the login card */
+.border-gradient-to-r {
+  border: 2px solid;
+  border-image: linear-gradient(to right, #6366f1, #3b82f6) 1;
+}
+
+/* Button glow effect on hover */
+.glow-on-hover {
+  transition: all 0.3s ease;
+}
+
+.glow-on-hover:hover {
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.5); /* Indigo-500 glow */
+}
+
+/* Subtle noise texture for the background (optional) */
+.bg-noise {
+  position: relative;
+}
+
+.bg-noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('https://www.transparenttextures.com/patterns/noise.png');
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+/* Custom focus styles for accessibility */
+button:focus, a:focus, input:focus {
+  outline: 2px solid #6366f1; /* Indigo-500 */
+  outline-offset: 2px;
 }
