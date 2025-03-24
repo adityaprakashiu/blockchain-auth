@@ -4,12 +4,14 @@ import { FaUserPlus, FaKey, FaLock, FaWallet, FaGithub, FaTwitter, FaUser } from
 import { ethers } from 'ethers';
 import AdminDashboard from './AdminDashboard';
 import Profile from './Profile';
-import AuthABI from './abi/AuthABI.json'; // Import the ABI
+import AuthABI from './abi/AuthABI.json';
+import deployed from './deployed.json';
 
-const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Valid address as confirmed
-const contractABI = AuthABI; // Use the imported ABI
+const contractAddress = deployed.Auth;
+const contractABI = AuthABI.abi;
 
-const Header = ({ walletAddress, fullWalletAddress, handleDisconnect, handleConnect }) => {
+const Header = ({ walletAddress, fullWalletAddress, handleDisconnect, handleConnect, isConnecting }) => {
+  console.log('Rendering Header with walletAddress:', walletAddress);
   return (
     <header className="bg-gray-800 text-gray-200 p-4 flex justify-between items-center shadow-md">
       <div className="flex items-center space-x-2">
@@ -39,9 +41,14 @@ const Header = ({ walletAddress, fullWalletAddress, handleDisconnect, handleConn
             onClick={handleConnect}
             className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded-md text-sm flex items-center space-x-1 transition-all duration-200"
             aria-label="Connect wallet"
+            disabled={isConnecting}
           >
-            <FaWallet />
-            <span>Connect Wallet</span>
+            {isConnecting ? 'Connecting...' : (
+              <>
+                <FaWallet />
+                <span>Connect Wallet</span>
+              </>
+            )}
           </button>
         )}
       </div>
@@ -50,6 +57,7 @@ const Header = ({ walletAddress, fullWalletAddress, handleDisconnect, handleConn
 };
 
 const Footer = () => {
+  console.log('Rendering Footer');
   return (
     <footer className="bg-gray-800 text-gray-400 p-4 shadow-md">
       <div className="flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
@@ -82,10 +90,11 @@ const Footer = () => {
   );
 };
 
-const Home = ({ walletAddress, fullWalletAddress, handleDisconnect, handleConnect, handleRegister, handleLogin, username, setUsername, error, setError, isLoading, setIsLoading, isRegistered, balance, showBalance, setShowBalance, showOTPModal, setShowOTPModal, otp, setOtp, handleOtpSubmit, generatedOtp }) => {
+const Home = ({ walletAddress, fullWalletAddress, handleDisconnect, handleConnect, handleRegister, handleLogin, username, setUsername, error, setError, isLoading, setIsLoading, isRegistered, balance, showBalance, setShowBalance, showOTPModal, setShowOTPModal, otp, setOtp, handleOtpSubmit, handleOtpCancel, generatedOtp, isConnecting }) => {
+  console.log('Rendering Home with state:', { walletAddress, username, error, isLoading, isRegistered, showOTPModal });
   return (
     <div className="flex flex-col min-h-screen bg-gray-900">
-      <Header walletAddress={walletAddress} fullWalletAddress={fullWalletAddress} handleDisconnect={handleDisconnect} handleConnect={handleConnect} />
+      <Header walletAddress={walletAddress} fullWalletAddress={fullWalletAddress} handleDisconnect={handleDisconnect} handleConnect={handleConnect} isConnecting={isConnecting} />
       <div className="flex flex-col items-center justify-center flex-grow p-6">
         <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-sm">
           <h1 className="text-2xl font-semibold text-center mb-6 text-gray-200">Blockchain Authentication</h1>
@@ -191,12 +200,7 @@ const Home = ({ walletAddress, fullWalletAddress, handleDisconnect, handleConnec
                   Submit
                 </button>
                 <button
-                  onClick={() => {
-                    setShowOTPModal(false);
-                    setOtp('');
-                    setError('');
-                    setIsLoading(false);
-                  }}
+                  onClick={handleOtpCancel}
                   className="w-full bg-red-500 hover:bg-red-600 text-white p-3 rounded-md text-sm transition-all duration-200"
                   aria-label="Cancel OTP"
                 >
@@ -213,36 +217,80 @@ const Home = ({ walletAddress, fullWalletAddress, handleDisconnect, handleConnec
 };
 
 const App = () => {
+  console.log('App component mounted');
+
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-<<<<<<< HEAD
-  const [walletAddress, setWalletAddress] = useState(''); // Formatted address for display
-  const [fullWalletAddress, setFullWalletAddress] = useState(''); // Full address for contract calls
+  const [walletAddress, setWalletAddress] = useState('');
+  const [fullWalletAddress, setFullWalletAddress] = useState('');
   const [balance, setBalance] = useState('');
   const [showBalance, setShowBalance] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
-  const [otp, setOtp] = useState(''); // User-entered OTP
-  const [generatedOtp, setGeneratedOtp] = useState(''); // Generated OTP
-
+  const [otp, setOtp] = useState('');
+  const [generatedOtp, setGeneratedOtp] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
-<<<<<<< HEAD
+    console.log('Resetting OTP states on mount');
+    setShowOTPModal(false);
+    setGeneratedOtp('');
+    setOtp('');
+    setError('');
+
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    if (isLoggedIn) {
+      console.log('User is already logged in');
+    }
+  }, []);
+
+  useEffect(() => {
+    console.log('Running connectWallet useEffect');
     const connectWallet = async () => {
       if (window.ethereum) {
         try {
+          console.log('window.ethereum is available');
           const provider = new ethers.BrowserProvider(window.ethereum);
           const accounts = await provider.listAccounts();
+          console.log('Accounts:', accounts);
           if (accounts.length > 0) {
-            setFullWalletAddress(accounts[0].address); // Store the full address
-            setWalletAddress(accounts[0].address.slice(0, 5) + '...' + accounts[0].address.slice(-3)); // Store the formatted address
+            setFullWalletAddress(accounts[0].address);
+            setWalletAddress(accounts[0].address.slice(0, 5) + '...' + accounts[0].address.slice(-3));
             const latestBlock = await provider.getBlockNumber();
             const balance = await provider.getBalance(accounts[0].address, latestBlock);
             setBalance(ethers.formatEther(balance));
+            console.log('Wallet connected:', accounts[0].address, 'Balance:', ethers.formatEther(balance));
+
+            const contract = new ethers.Contract(contractAddress, contractABI, provider);
+            try {
+              const userDetails = await contract.getUserDetails(accounts[0].address);
+              if (userDetails[0] !== '') {
+                setIsRegistered(true);
+                setUsername(userDetails[0]);
+                console.log('User is registered:', JSON.stringify({
+                  username: userDetails[0],
+                  address: userDetails[1],
+                  role: userDetails[2],
+                  lastLogin: userDetails[3].toString(),
+                  message: userDetails[4],
+                }, null, 2));
+              } else {
+                setIsRegistered(false);
+                setUsername('');
+                console.log('User is not registered for address:', accounts[0].address);
+              }
+            } catch (err) {
+              console.log('Error checking user registration:', err.message);
+              setIsRegistered(false);
+              setUsername('');
+            }
+          } else {
+            console.log('No accounts connected');
           }
 
-          window.ethereum.on('accountsChanged', async (accounts) => {
+          const handleAccountsChanged = async (accounts) => {
+            console.log('accountsChanged event:', accounts);
             if (accounts.length > 0) {
               setFullWalletAddress(accounts[0]);
               setWalletAddress(accounts[0].slice(0, 5) + '...' + accounts[0].slice(-3));
@@ -250,6 +298,31 @@ const App = () => {
               const latestBlock = await provider.getBlockNumber();
               const balance = await provider.getBalance(accounts[0], latestBlock);
               setBalance(ethers.formatEther(balance));
+              console.log('Account changed, new wallet:', accounts[0], 'Balance:', ethers.formatEther(balance));
+
+              const contract = new ethers.Contract(contractAddress, contractABI, provider);
+              try {
+                const userDetails = await contract.getUserDetails(accounts[0]);
+                if (userDetails[0] !== '') {
+                  setIsRegistered(true);
+                  setUsername(userDetails[0]);
+                  console.log('User is registered after account change:', JSON.stringify({
+                    username: userDetails[0],
+                    address: userDetails[1],
+                    role: userDetails[2],
+                    lastLogin: userDetails[3].toString(),
+                    message: userDetails[4],
+                  }, null, 2));
+                } else {
+                  setIsRegistered(false);
+                  setUsername('');
+                  console.log('User is not registered after account change:', accounts[0]);
+                }
+              } catch (err) {
+                console.log('Error checking user registration after account change:', err.message);
+                setIsRegistered(false);
+                setUsername('');
+              }
             } else {
               setWalletAddress('');
               setFullWalletAddress('');
@@ -260,17 +333,30 @@ const App = () => {
               setShowOTPModal(false);
               setOtp('');
               setGeneratedOtp('');
+              setError('');
+              console.log('All accounts disconnected');
             }
-          });
+          };
 
-          window.ethereum.on('chainChanged', () => {
+          const handleChainChanged = () => {
+            console.log('chainChanged event, reloading page');
             window.location.reload();
-          });
+          };
+
+          window.ethereum.on('accountsChanged', handleAccountsChanged);
+          window.ethereum.on('chainChanged', handleChainChanged);
+
+          return () => {
+            console.log('Cleaning up event listeners');
+            window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+            window.ethereum.removeListener('chainChanged', handleChainChanged);
+          };
         } catch (err) {
           console.error('Error connecting to wallet:', err);
           setError('Failed to connect wallet: ' + err.message);
         }
       } else {
+        console.log('MetaMask is not installed');
         setError('MetaMask is not installed');
       }
     };
@@ -278,13 +364,14 @@ const App = () => {
     connectWallet();
   }, []);
 
-<<<<<<< HEAD
   const generateOtp = () => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log('Generated OTP:', otp);
     return otp;
   };
 
   const handleRegister = async () => {
+    console.log('handleRegister called with username:', username);
     setIsLoading(true);
     setError('');
     try {
@@ -294,9 +381,16 @@ const App = () => {
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
+      const userAddress = await signer.getAddress();
+      console.log('Registering with address:', userAddress);
+
       const contract = new ethers.Contract(contractAddress, contractABI, signer);
+      console.log('Calling registerUser on contract at:', contractAddress);
+
       const tx = await contract.registerUser(username, { gasLimit: 300000 });
-      await tx.wait();
+      console.log('Transaction sent:', tx.hash);
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt.hash);
 
       setIsRegistered(true);
       alert('Registration successful! Your public key has been stored on the blockchain.');
@@ -306,6 +400,7 @@ const App = () => {
         setError(`Registration failed: ${err.reason}`);
       } else if (err.message.includes('User already registered')) {
         setError('Registration failed: User already registered');
+        setIsRegistered(true);
       } else {
         setError(`Registration failed: ${err.message}`);
       }
@@ -315,23 +410,62 @@ const App = () => {
   };
 
   const handleLogin = async () => {
+    console.log('handleLogin called with username:', username);
     setIsLoading(true);
     setError('');
     try {
-<<<<<<< HEAD
       if (!window.ethereum) throw new Error('MetaMask is not installed');
       if (!fullWalletAddress) throw new Error('Please connect your wallet first');
-      if (!isRegistered) throw new Error('Please register first');
+      if (!username || username.length < 3) throw new Error('Username must be at least 3 characters');
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, contractABI, signer);
+      const userAddress = await signer.getAddress();
+      console.log('Signing with address:', userAddress);
+
+      // Check if the user is registered
+      const contract = new ethers.Contract(contractAddress, contractABI, provider);
+      let userDetails;
+      try {
+        userDetails = await contract.getUserDetails(userAddress);
+        console.log('User details before login:', JSON.stringify({
+          username: userDetails[0],
+          address: userDetails[1],
+          role: userDetails[2],
+          lastLogin: userDetails[3].toString(),
+          message: userDetails[4],
+        }, null, 2));
+        if (userDetails[0] === '') {
+          throw new Error('User not registered');
+        }
+        if (userDetails[0] !== username) {
+          throw new Error('Username does not match the registered user');
+        }
+        if (userDetails[1].toLowerCase() !== userAddress.toLowerCase()) {
+          throw new Error('Connected wallet does not match the registered user');
+        }
+      } catch (err) {
+        console.error('Error fetching user details:', err);
+        if (err.message.includes('revert')) {
+          throw new Error('User not registered');
+        }
+        throw new Error('Failed to fetch user details: ' + err.message);
+      }
 
       const message = 'Sign this message to log in: ' + Date.now();
-      const signature = await signer.signMessage(message);
+      console.log('Message to sign:', message);
 
-      const tx = await contract.attemptLogin(message, signature, { gasLimit: 300000 });
+      // Sign the message using ethers
+      const signature = await signer.signMessage(message);
+      console.log('Signature:', signature);
+
+      console.log('Calling attemptLogin on contract at:', contractAddress);
+      const contractWithSigner = new ethers.Contract(contractAddress, contractABI, signer);
+      const tx = await contractWithSigner.attemptLogin(message, signature, { gasLimit: 500000 });
+      console.log('Transaction sent:', tx.hash);
+
       const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt.hash);
 
       const loginEvent = receipt.logs
         .map((log) => {
@@ -343,33 +477,65 @@ const App = () => {
         })
         .find((log) => log && log.name === 'LoginAttempt');
 
-      if (!loginEvent || !loginEvent.args.success) {
-        throw new Error('Signature verification failed');
+      if (!loginEvent) {
+        console.log('LoginAttempt event not found');
+        throw new Error('LoginAttempt event not found');
       }
 
+      console.log('LoginAttempt event:', JSON.stringify({
+        user: loginEvent.args.user,
+        success: loginEvent.args.success,
+        message: loginEvent.args.message,
+      }, null, 2));
+
+      if (!loginEvent.args.success) {
+        console.log('Signature verification failed in contract. Event message:', loginEvent.args.message);
+        throw new Error('Signature verification failed: ' + loginEvent.args.message);
+      }
+
+      console.log('Signature verification passed. Showing OTP modal...');
       const newOtp = generateOtp();
       setGeneratedOtp(newOtp);
       setOtp('');
+      setError('');
       setShowOTPModal(true);
+
+      const updatedUserDetails = await contract.getUserDetails(userAddress);
+      console.log('User details after login:', JSON.stringify({
+        username: updatedUserDetails[0],
+        address: updatedUserDetails[1],
+        role: updatedUserDetails[2],
+        lastLogin: updatedUserDetails[3].toString(),
+        message: updatedUserDetails[4],
+      }, null, 2));
     } catch (err) {
       console.error('Detailed error:', err);
-      if (err.reason) {
+      if (err.message.includes('User not registered')) {
+        setError('Login failed: User not registered');
+      } else if (err.code === -32603) {
+        setError('Login failed: Transaction reverted. Please check the contract state and try again.');
+      } else if (err.message.includes('Signature verification failed')) {
+        setError('Login failed: Invalid signature. Please try again.');
+      } else if (err.reason) {
         setError(`Login failed: ${err.reason}`);
       } else {
         setError('Login failed: ' + err.message);
       }
+      setShowOTPModal(false);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleOtpSubmit = () => {
+    console.log('handleOtpSubmit called with otp:', otp, 'generatedOtp:', generatedOtp);
     setError('');
     if (otp === generatedOtp) {
       setShowOTPModal(false);
       setOtp('');
       setGeneratedOtp('');
       setIsLoading(false);
+      localStorage.setItem('isLoggedIn', 'true'); // Persist login state
       alert('Logged in successfully! Signature and OTP verified.');
       setUsername('');
     } else {
@@ -377,7 +543,17 @@ const App = () => {
     }
   };
 
+  const handleOtpCancel = () => {
+    console.log('handleOtpCancel called');
+    setShowOTPModal(false);
+    setOtp('');
+    setGeneratedOtp('');
+    setError('');
+    setIsLoading(false);
+  };
+
   const handleDisconnect = () => {
+    console.log('handleDisconnect called');
     const confirmDisconnect = window.confirm('Are you sure you want to disconnect your wallet?');
     if (confirmDisconnect) {
       setWalletAddress('');
@@ -390,29 +566,63 @@ const App = () => {
       setOtp('');
       setGeneratedOtp('');
       setError('');
+      localStorage.removeItem('isLoggedIn'); // Clear login state
+      console.log('Wallet disconnected');
     }
   };
 
   const handleConnect = async () => {
+    console.log('handleConnect called');
     if (window.ethereum) {
+      setIsConnecting(true);
       try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        setFullWalletAddress(accounts[0]); // Store the full address
-        setWalletAddress(accounts[0].slice(0, 5) + '...' + accounts[0].slice(-3)); // Store the formatted address
+        setFullWalletAddress(accounts[0]);
+        setWalletAddress(accounts[0].slice(0, 5) + '...' + accounts[0].slice(-3));
         const provider = new ethers.BrowserProvider(window.ethereum);
         const latestBlock = await provider.getBlockNumber();
         const balance = await provider.getBalance(accounts[0], latestBlock);
         setBalance(ethers.formatEther(balance));
+        console.log('Wallet connected:', accounts[0], 'Balance:', ethers.formatEther(balance));
+
+        const contract = new ethers.Contract(contractAddress, contractABI, provider);
+        try {
+          const userDetails = await contract.getUserDetails(accounts[0]);
+          if (userDetails[0] !== '') {
+            setIsRegistered(true);
+            setUsername(userDetails[0]);
+            console.log('User is registered after connect:', JSON.stringify({
+              username: userDetails[0],
+              address: userDetails[1],
+              role: userDetails[2],
+              lastLogin: userDetails[3].toString(),
+              message: userDetails[4],
+            }, null, 2));
+          } else {
+            setIsRegistered(false);
+            setUsername('');
+            console.log('User is not registered after connect:', accounts[0]);
+          }
+        } catch (err) {
+          console.log('Error checking user registration after connect:', err.message);
+          setIsRegistered(false);
+          setUsername('');
+        }
       } catch (err) {
+        console.error('Failed to connect wallet:', err);
         setError('Failed to connect wallet: ' + err.message);
+      } finally {
+        setIsConnecting(false);
       }
     } else {
+      console.log('MetaMask is not installed');
       setError('MetaMask is not installed');
     }
   };
 
+  console.log('Rendering App with state:', { walletAddress, username, error, isLoading, isRegistered, showOTPModal });
+
   return (
-<<<<<<< HEAD
     <Router>
       <Routes>
         <Route
@@ -440,7 +650,9 @@ const App = () => {
               otp={otp}
               setOtp={setOtp}
               handleOtpSubmit={handleOtpSubmit}
+              handleOtpCancel={handleOtpCancel}
               generatedOtp={generatedOtp}
+              isConnecting={isConnecting}
             />
           }
         />

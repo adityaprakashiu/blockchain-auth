@@ -1,4 +1,11 @@
-[
+{
+  "contractName": "Auth",
+  "abi": [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
     {
       "anonymous": false,
       "inputs": [
@@ -35,9 +42,9 @@
         },
         {
           "indexed": false,
-          "internalType": "enum Auth.Role",
+          "internalType": "string",
           "name": "newRole",
-          "type": "uint8"
+          "type": "string"
         }
       ],
       "name": "RoleChanged",
@@ -57,40 +64,40 @@
           "internalType": "string",
           "name": "username",
           "type": "string"
-        },
-        {
-          "indexed": false,
-          "internalType": "enum Auth.Role",
-          "name": "role",
-          "type": "uint8"
         }
       ],
       "name": "UserRegistered",
       "type": "event"
     },
     {
+      "anonymous": false,
       "inputs": [
         {
+          "indexed": true,
           "internalType": "address",
-          "name": "userAddress",
+          "name": "user",
           "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "newUsername",
+          "type": "string"
         }
       ],
-      "name": "assignAdmin",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
+      "name": "UsernameUpdated",
+      "type": "event"
     },
     {
       "inputs": [
         {
           "internalType": "string",
-          "name": "message",
+          "name": "_message",
           "type": "string"
         },
         {
           "internalType": "bytes",
-          "name": "signature",
+          "name": "_signature",
           "type": "bytes"
         }
       ],
@@ -109,11 +116,107 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "userAddress",
+          "name": "_userAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "_newRole",
+          "type": "string"
+        }
+      ],
+      "name": "changeUserRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getUserCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_userAddress",
           "type": "address"
         }
       ],
-      "name": "deleteUser",
+      "name": "getUserDetails",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_username",
+          "type": "string"
+        }
+      ],
+      "name": "registerUser",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "superAdmin",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_newUsername",
+          "type": "string"
+        }
+      ],
+      "name": "updateUsername",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -121,12 +224,31 @@
     {
       "inputs": [
         {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "userAddresses",
+      "outputs": [
+        {
           "internalType": "address",
-          "name": "userAddress",
+          "name": "",
           "type": "address"
         }
       ],
-      "name": "getUserDetails",
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "users",
       "outputs": [
         {
           "internalType": "string",
@@ -135,7 +257,7 @@
         },
         {
           "internalType": "address",
-          "name": "userAddr",
+          "name": "userAddress",
           "type": "address"
         },
         {
@@ -149,38 +271,13 @@
           "type": "uint256"
         },
         {
-          "internalType": "string",
-          "name": "message",
-          "type": "string"
+          "internalType": "bool",
+          "name": "isRegistered",
+          "type": "bool"
         }
       ],
       "stateMutability": "view",
       "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "string",
-          "name": "username",
-          "type": "string"
-        }
-      ],
-      "name": "registerUser",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "userAddress",
-          "type": "address"
-        }
-      ],
-      "name": "revokeAdminRole",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
     }
   ]
+}

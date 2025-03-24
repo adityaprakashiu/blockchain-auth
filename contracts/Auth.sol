@@ -1,162 +1,125 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 contract Auth {
-    enum Role { User, Admin, SuperAdmin } // Added SuperAdmin role for more granularity
-
     struct User {
-        string username;       // Username for user identification
-        address userAddress;   // Wallet address of the user
-        Role role;             // Role for RBAC
-        uint256 lastLogin;     // Timestamp of last successful login (for audit logging)
+        string username;
+        address userAddress;
+        string role;
+        uint256 lastLogin;
+        bool isRegistered;
     }
 
-    mapping(address => User) private users;
-    address public contractOwner;
+    mapping(address => User) public users;
+    address[] public userAddresses;
+    address public superAdmin;
 
-    // Events for audit logging and frontend interaction
-    event UserRegistered(address indexed user, string username, Role role);
+    event UserRegistered(address indexed user, string username);
+    event UsernameUpdated(address indexed user, string newUsername);
     event LoginAttempt(address indexed user, bool success, string message);
-    event RoleChanged(address indexed user, Role newRole);
-    event RoleRevoked(address indexed user, Role oldRole);
-    event UserRemoved(address indexed user);
-    event SignatureVerified(address indexed user, bool success);
+    event RoleChanged(address indexed user, string newRole);
+    event UserDeleted(address indexed user); // New event for user deletion
 
-    modifier onlyAdmin() {
-        require(users[msg.sender].role == Role.Admin || users[msg.sender].role == Role.SuperAdmin, "Access denied: Admins only");
-        _;
+    constructor() {
+        superAdmin = msg.sender;
+        users[msg.sender] = User("superadmin", msg.sender, "SuperAdmin", block.timestamp, true);
+        userAddresses.push(msg.sender);
+        emit UserRegistered(msg.sender, "superadmin");
     }
 
     modifier onlySuperAdmin() {
-        require(users[msg.sender].role == Role.SuperAdmin, "Access denied: SuperAdmins only");
+        require(
+            keccak256(bytes(users[msg.sender].role)) == keccak256(bytes("SuperAdmin")),
+            "Only SuperAdmin can perform this action"
+        );
         _;
     }
 
-    modifier onlyRegisteredUser() {
-        require(users[msg.sender].userAddress != address(0), "User not registered");
-        _;
+    function registerUser(string memory _username) public {
+        require(!users[msg.sender].isRegistered, "User already registered");
+        require(bytes(_username).length >= 3, "Username must be at least 3 characters");
+
+        users[msg.sender] = User(_username, msg.sender, "User", 0, true);
+        userAddresses.push(msg.sender);
+        emit UserRegistered(msg.sender, _username);
     }
 
-    constructor() {
-        contractOwner = msg.sender;
-        // Register contract owner as SuperAdmin with default username
-        users[msg.sender] = User("Owner", msg.sender, Role.SuperAdmin, block.timestamp);
-        emit UserRegistered(msg.sender, "Owner", Role.SuperAdmin);
+    function updateUsername(string memory _newUsername) public {
+        require(users[msg.sender].isRegistered, "User not registered");
+        require(bytes(_newUsername).length >= 3, "Username must be at least 3 characters");
+
+        users[msg.sender].username = _newUsername;
+        emit UsernameUpdated(msg.sender, _newUsername);
     }
 
-    // Register User with Username
-    function registerUser(string memory username) public {
-        require(users[msg.sender].userAddress == address(0), "User already registered");
-        require(bytes(username).length >= 3, "Username must be at least 3 characters");
+    function attemptLogin(string memory _message, bytes memory _signature) public returns (bool) {
+        require(users[msg.sender].isRegistered, "User not registered");
 
-        users[msg.sender] = User(username, msg.sender, Role.User, 0);
-        emit UserRegistered(msg.sender, username, Role.User);
-    }
+        bytes32 messageHash = keccak256(abi.encodePacked(_message));
+        bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
+        address signer = recoverSigner(ethSignedMessageHash, _signature);
 
-    // Verify Signature for Login (Wallet-Based Authentication)
-    function attemptLogin(string memory message, bytes memory signature) public returns (bool) {
-        require(users[msg.sender].userAddress != address(0), "User not registered");
-
-        // Verify the signature
-        bool isValid = verifySignature(msg.sender, message, signature);
-        if (!isValid) {
+        if (signer != msg.sender) {
             emit LoginAttempt(msg.sender, false, "Invalid signature");
             return false;
         }
 
-        // Update last login timestamp
         users[msg.sender].lastLogin = block.timestamp;
         emit LoginAttempt(msg.sender, true, "Login successful");
-        emit SignatureVerified(msg.sender, true);
         return true;
     }
 
-    // Assign Admin Role
-    function assignAdmin(address userAddress) public onlySuperAdmin {
-        require(users[userAddress].userAddress != address(0), "User does not exist");
-        require(users[userAddress].role != Role.SuperAdmin, "Cannot change SuperAdmin role");
-
-        users[userAddress].role = Role.Admin;
-        emit RoleChanged(userAddress, Role.Admin);
+    function recoverSigner(bytes32 _ethSignedMessageHash, bytes memory _signature) internal pure returns (address) {
+        (bytes32 r, bytes32 s, uint8 v) = splitSignature(_signature);
+        return ecrecover(_ethSignedMessageHash, v, r, s);
     }
 
-    // Assign SuperAdmin Role (Only by contract owner)
-    function assignSuperAdmin(address userAddress) public {
-        require(msg.sender == contractOwner, "Only contract owner can assign SuperAdmin role");
-        require(users[userAddress].userAddress != address(0), "User does not exist");
-
-        users[userAddress].role = Role.SuperAdmin;
-        emit RoleChanged(userAddress, Role.SuperAdmin);
-    }
-
-    // Revoke Admin or SuperAdmin Role
-    function revokeAdminRole(address userAddress) public onlySuperAdmin {
-        require(users[userAddress].userAddress != address(0), "User does not exist");
-        require(users[userAddress].role == Role.Admin || users[userAddress].role == Role.SuperAdmin, "User is not an Admin or SuperAdmin");
-        require(userAddress != contractOwner, "Cannot revoke contract owner's role");
-
-        Role oldRole = users[userAddress].role;
-        users[userAddress].role = Role.User;
-        emit RoleRevoked(userAddress, oldRole);
-    }
-
-    // Delete User
-    function deleteUser(address userAddress) public onlyAdmin {
-        require(users[userAddress].userAddress != address(0), "User does not exist");
-        require(users[userAddress].role != Role.SuperAdmin, "Cannot delete SuperAdmin accounts");
-
-        if (users[userAddress].role == Role.Admin) {
-            require(users[msg.sender].role == Role.SuperAdmin, "Only SuperAdmins can delete Admin accounts");
-        }
-
-        delete users[userAddress];
-        emit UserRemoved(userAddress);
-    }
-
-    // Get User Role
-    function getUserRole() public view onlyRegisteredUser returns (string memory) {
-        if (users[msg.sender].role == Role.SuperAdmin) return "SuperAdmin";
-        if (users[msg.sender].role == Role.Admin) return "Admin";
-        return "User";
-    }
-
-    // Get User Details (Including Last Login for Audit)
-    function getUserDetails(address userAddress) public view returns (string memory username, address userAddr, string memory role, uint256 lastLogin, string memory message) {
-        require(users[userAddress].userAddress != address(0), "User not found");
-
-        string memory userRole = users[userAddress].role == Role.SuperAdmin ? "SuperAdmin" : users[userAddress].role == Role.Admin ? "Admin" : "User";
-
-        return (
-            users[userAddress].username,
-            users[userAddress].userAddress,
-            userRole,
-            users[userAddress].lastLogin,
-            "User details retrieved successfully"
-        );
-    }
-
-    // Verify Signature (For Wallet-Based Authentication)
-    function verifySignature(address user, string memory message, bytes memory signature) public pure returns (bool) {
-        bytes32 messageHash = keccak256(abi.encodePacked(message));
-        bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
-        address signer = recoverSigner(ethSignedMessageHash, signature);
-        return signer == user;
-    }
-
-    // Recover Signer from Signature
-    function recoverSigner(bytes32 messageHash, bytes memory signature) internal pure returns (address) {
-        (uint8 v, bytes32 r, bytes32 s) = splitSignature(signature);
-        return ecrecover(messageHash, v, r, s);
-    }
-
-    // Split Signature into v, r, s Components
-    function splitSignature(bytes memory sig) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
-        require(sig.length == 65, "Invalid signature length");
+    function splitSignature(bytes memory _sig) internal pure returns (bytes32 r, bytes32 s, uint8 v) {
+        require(_sig.length == 65, "Invalid signature length");
         assembly {
-            r := mload(add(sig, 32))
-            s := mload(add(sig, 64))
-            v := byte(0, mload(add(sig, 96)))
+            r := mload(add(_sig, 32))
+            s := mload(add(_sig, 64))
+            v := byte(0, mload(add(_sig, 96)))
         }
-        if (v < 27) v += 27;
+        if (v < 27) {
+            v += 27;
+        }
+    }
+
+    function getUserDetails(address _userAddress) public view returns (string memory, address, string memory, uint256, string memory) {
+        User memory user = users[_userAddress];
+        if (!user.isRegistered) {
+            return ("", address(0), "", 0, "User not found");
+        }
+        return (user.username, user.userAddress, user.role, user.lastLogin, "User details retrieved successfully");
+    }
+
+    function changeUserRole(address _userAddress, string memory _newRole) public onlySuperAdmin {
+        require(users[_userAddress].isRegistered, "User not registered");
+        require(bytes(_newRole).length > 0, "Role cannot be empty");
+        users[_userAddress].role = _newRole;
+        emit RoleChanged(_userAddress, _newRole);
+    }
+
+    function deleteUser(address _userAddress) public onlySuperAdmin {
+        require(users[_userAddress].isRegistered, "User not registered");
+        require(_userAddress != superAdmin, "Cannot delete SuperAdmin");
+
+        // Remove the user from the userAddresses array
+        for (uint256 i = 0; i < userAddresses.length; i++) {
+            if (userAddresses[i] == _userAddress) {
+                userAddresses[i] = userAddresses[userAddresses.length - 1];
+                userAddresses.pop();
+                break;
+            }
+        }
+
+        // Delete the user from the mapping
+        delete users[_userAddress];
+        emit UserDeleted(_userAddress);
+    }
+
+    function getUserCount() public view returns (uint256) {
+        return userAddresses.length;
     }
 }

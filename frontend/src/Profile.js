@@ -1,69 +1,116 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaLock, FaGithub, FaTwitter } from 'react-icons/fa';
+import { FaLock, FaGithub, FaTwitter, FaSyncAlt } from 'react-icons/fa';
 import { ethers } from 'ethers';
-import AuthABI from './abi/AuthABI.json'; // Import the ABI
+import AuthABI from './abi/AuthABI.json';
+import deployed from './deployed.json';
+
+const contractAddress = deployed.Auth; // Use the address from deployed.json
+const contractABI = AuthABI.abi; // Use AuthABI.abi instead of AuthABI
 
 const Profile = ({ walletAddress, fullWalletAddress }) => {
   const [username, setUsername] = useState('');
   const [role, setRole] = useState('');
   const [lastLogin, setLastLogin] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [newUsername, setNewUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Replace with the address from deployed.json
-  const contractABI = AuthABI; // Use the imported ABI
+  const [usernameError, setUsernameError] = useState('');
 
   useEffect(() => {
-    const fetchUserDetails = async () => {
-      try {
-        if (!window.ethereum) throw new Error('MetaMask is not installed');
-        if (!fullWalletAddress) throw new Error('Please connect your wallet first');
-
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const contract = new ethers.Contract(contractAddress, contractABI, provider);
-
-        const userDetails = await contract.getUserDetails(fullWalletAddress);
-        setUsername(userDetails.username);
-        setRole(userDetails.role);
-        setLastLogin(userDetails.lastLogin.toString());
-      } catch (err) {
-        setError('Failed to fetch user details: ' + err.message);
-      }
-    };
-
-    fetchUserDetails();
+    if (fullWalletAddress) {
+      fetchUserDetails();
+    }
   }, [fullWalletAddress]);
 
-  const handleUpdateUsername = async () => {
-    setIsLoading(true);
-    setError('');
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  const fetchUserDetails = async () => {
     try {
       if (!window.ethereum) throw new Error('MetaMask is not installed');
       if (!fullWalletAddress) throw new Error('Please connect your wallet first');
-      if (newUsername.length < 3) throw new Error('Username must be at least 3 characters');
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(contractAddress, contractABI, provider);
+
+      const userDetails = await contract.getUserDetails(fullWalletAddress);
+      setUsername(userDetails[0]);
+      setRole(userDetails[2]);
+      setLastLogin(userDetails[3].toString());
+      console.log('Profile - Fetched user details:', JSON.stringify({
+        username: userDetails[0],
+        address: userDetails[1],
+        role: userDetails[2],
+        lastLogin: userDetails[3].toString(),
+        message: userDetails[4],
+      }, null, 2));
+      setError(''); // Clear any previous errors on success
+    } catch (err) {
+      console.error('Profile - Error fetching user details:', err);
+      if (err.message.includes('revert') || err.message.includes('User not registered')) {
+        setError('User not registered. Please register on the home page.');
+      } else {
+        setError('Failed to fetch user details: ' + err.message);
+      }
+    }
+  };
+
+  const handleUpdateUsername = async () => {
+    if (newUsername.length < 3) {
+      setUsernameError('Username must be at least 3 characters');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+    setUsernameError('');
+    setSuccessMessage('');
+    try {
+      if (!window.ethereum) throw new Error('MetaMask is not installed');
+      if (!fullWalletAddress) throw new Error('Please connect your wallet first');
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, contractABI, signer);
 
-      const tx = await contract.registerUser(newUsername, { gasLimit: 300000 });
+      const tx = await contract.updateUsername(newUsername, { gasLimit: 300000 });
+      console.log('Profile - Transaction sent:', tx.hash);
       await tx.wait();
+      console.log('Profile - Transaction confirmed:', tx.hash);
 
       setUsername(newUsername);
       setNewUsername('');
-      alert('Username updated successfully!');
+      setSuccessMessage('Username updated successfully!');
+      await fetchUserDetails(); // Refresh user details after update
     } catch (err) {
-      console.error('Detailed error:', err);
-      if (err.reason) {
+      console.error('Profile - Detailed error:', err);
+      if (err.message.includes('revert') || err.message.includes('User not registered')) {
+        setError('User not registered. Please register on the home page.');
+      } else if (err.reason) {
         setError(`Failed to update username: ${err.reason}`);
+      } else if (err.code === -32603) {
+        setError('Failed to update username: Transaction reverted. Please check the contract state.');
       } else {
         setError('Failed to update username: ' + err.message);
       }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const validateUsername = (value) => {
+    if (value.length < 3 && value.length > 0) {
+      setUsernameError('Username must be at least 3 characters');
+    } else {
+      setUsernameError('');
+    }
+    setNewUsername(value);
   };
 
   return (
@@ -84,38 +131,59 @@ const Profile = ({ walletAddress, fullWalletAddress }) => {
       </header>
 
       <div className="flex flex-col items-center justify-center flex-grow p-6">
-        <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-sm">
+        <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md">
           <h2 className="text-2xl font-semibold text-center mb-6 text-gray-200">Profile</h2>
 
           {error && <p className="text-red-400 text-center mb-4">{error}</p>}
+          {successMessage && <p className="text-green-400 text-center mb-4">{successMessage}</p>}
 
-          <div className="mb-4">
-            <p className="text-gray-200">Wallet Address: {walletAddress}</p>
-            <p className="text-gray-200">Username: {username || 'Not set'}</p>
-            <p className="text-gray-200">Role: {role || 'Not set'}</p>
+          <div className="space-y-3 mb-6">
+            <p className="text-gray-200"><strong>Wallet Address:</strong> {walletAddress || 'Not connected'}</p>
+            <p className="text-gray-200"><strong>Username:</strong> {username || 'Not set'}</p>
+            <p className="text-gray-200"><strong>Role:</strong> {role || 'Not set'}</p>
             <p className="text-gray-200">
-              Last Login: {lastLogin ? new Date(lastLogin * 1000).toLocaleString() : 'Never'}
+              <strong>Last Login:</strong> {lastLogin ? new Date(parseInt(lastLogin) * 1000).toLocaleString() : 'Never'}
             </p>
           </div>
 
-          <h3 className="text-lg font-medium text-gray-200 mb-2">Update Username</h3>
+          <button
+            onClick={fetchUserDetails}
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-md flex items-center justify-center text-sm transition-all duration-200 mb-6"
+            aria-label="Refresh user details"
+            disabled={isLoading}
+          >
+            <FaSyncAlt className="mr-2" /> Refresh Details
+          </button>
+
+          <h3 className="text-lg font-medium text-gray-200 mb-3">Update Username</h3>
           <div className="mb-4">
             <input
               type="text"
               value={newUsername}
-              onChange={(e) => setNewUsername(e.target.value)}
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-200 placeholder-gray-400"
+              onChange={(e) => validateUsername(e.target.value)}
+              className={`w-full p-3 bg-gray-700 border ${usernameError ? 'border-red-500' : 'border-gray-600'} rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-200 placeholder-gray-400`}
               placeholder="Enter new username"
               aria-label="Enter new username"
             />
+            {usernameError && <p className="text-red-400 text-sm mt-1">{usernameError}</p>}
           </div>
           <button
             onClick={handleUpdateUsername}
-            className="w-full bg-gray-600 hover:bg-gray-500 text-gray-200 p-3 rounded-md text-sm transition-all duration-200"
+            className="w-full bg-gray-600 hover:bg-gray-500 text-gray-200 p-3 rounded-md flex items-center justify-center text-sm transition-all duration-200 disabled:opacity-50"
             aria-label="Update username"
-            disabled={isLoading}
+            disabled={isLoading || !!usernameError}
           >
-            {isLoading ? 'Updating...' : 'Update Username'}
+            {isLoading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 mr-2 text-gray-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Updating...
+              </>
+            ) : (
+              'Update Username'
+            )}
           </button>
         </div>
       </div>
