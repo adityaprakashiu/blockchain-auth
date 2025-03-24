@@ -1,70 +1,45 @@
-# Getting Started with Create React App
+# Frontend for Blockchain-Based Authentication System
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This directory contains the frontend code for the Blockchain-Based Authentication System, a decentralized application (dApp) that provides secure and transparent access control for operating systems using Ethereum blockchain. The frontend is built with React, styled with Tailwind CSS, and interacts with the Ethereum blockchain using Ethers.js and MetaMask.
 
-## Available Scripts
+## 📌 Features
+- **User Registration and Login**:
+  - Register with a username and log in using signature-based authentication via MetaMask.
+- **Profile Page**:
+  - View user details (username, role, last login).
+  - Update username with validation (minimum 3 characters).
+  - Redirects unregistered users to the home page with an error message.
+- **Admin Dashboard**:
+  - View audit logs (user registrations, login attempts, role changes) accessible to all users.
+  - Manage users (assign/revoke admin roles, delete users) restricted to the `SuperAdmin`.
+  - Displays loading states and error messages for user actions.
+- **Responsive Design**:
+  - Styled with Tailwind CSS for a clean and responsive user interface.
+- **Error Handling**:
+  - Comprehensive error handling for blockchain interactions (e.g., transaction reverts, invalid inputs).
 
-In the project directory, you can run:
+## 🚀 Technologies Used
+- **React**: Frontend framework for building the user interface.
+- **Tailwind CSS**: Utility-first CSS framework for styling.
+- **Ethers.js**: Library for interacting with the Ethereum blockchain and the `Auth` smart contract.
+- **MetaMask**: Wallet integration for user authentication and transaction signing.
+- **React Router**: For navigation between pages (Home, Profile, Admin Dashboard).
+- **Node.js**: Runtime environment for running the frontend development server.
 
-### `npm start`
+## 📂 Directory Structure
+- `src/` → Main source code directory.
+  - `AdminDashboard.js` → Component for the Admin Dashboard page (audit logs and user management).
+  - `Profile.js` → Component for the Profile page (view and update user details).
+  - `Home.js` → Component for the Home page (user registration and login).
+  - `App.js` → Main app component with routing setup.
+  - `deployed.json` → Stores the deployed `Auth` contract address.
+- `public/` → Static assets (e.g., `index.html`).
+- `package.json` → Frontend dependencies and scripts.
+- `README.md` → This documentation file.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## 🛠️ Setup Instructions
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### ✅ 1. Navigate to the Frontend Directory
+Ensure you’re in the `frontend/` directory of the project:
+```bash
+cd frontend
