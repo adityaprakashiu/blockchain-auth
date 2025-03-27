@@ -162,3 +162,171 @@ GitHub: adityaprakashiu
 Email: adityaprakashiu@gmail.com
 
 
+blockchain-auth/
+├── contracts/                
+│   └── Auth.sol              
+├── scripts/                  
+│   └── deploy.js             
+├── test/                     
+│   └── Auth.test.js          
+├── frontend/                 
+│   ├── src/                 
+│   │   ├── components/       
+│   │   ├── About.jsx         
+│   │   ├── Contact.jsx       
+│   │   ├── PrivacyPolicy.jsx 
+│   │   ├── Logs.jsx          
+│   │   ├── Home.jsx          
+│   │   ├── Profile.jsx       
+│   │   ├── Settings.jsx      
+│   │   ├── App.jsx           
+│   │   └── deployed.json     
+├── backend/                 
+│   ├── api/                  
+│   └── database/             
+├── README.md                 
+├── hardhat.config.js        
+└── package.json              
+🛠️ Setup Instructions
+✅ 1. Clone the Repository
+bash
+
+git clone https://github.com/adityaprakashiu/blockchain-auth.git
+cd blockchain-auth
+✅ 2. Install Dependencies
+Install dependencies for the root directory (Hardhat) and frontend:
+
+bash
+
+npm install
+cd frontend
+npm install
+cd ..
+Install PHP and MySQL (e.g., via XAMPP or WAMP) for the backend.
+
+✅ 3. Configure Backend
+Start XAMPP/WAMP and set up MySQL.
+Import the database schema from backend/database/schema.sql.
+Update backend/database/config.php with your MySQL credentials.
+✅ 4. Compile the Smart Contract
+bash
+
+npx hardhat compile
+✅ 5. Start Local Blockchain
+Run a local Ethereum network:
+
+bash
+
+
+npx hardhat node
+Note the accounts and private keys displayed (e.g., SuperAdmin: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266).
+
+✅ 6. Deploy the Smart Contract
+Deploy to the local network:
+
+bash
+
+
+npx hardhat run scripts/deploy.js --network localhost
+The contract address will be saved in frontend/src/deployed.json.
+
+✅ 7. Start the Frontend
+bash
+
+
+cd frontend
+npm start
+Open http://localhost:3000 in your browser.
+
+✅ 8. Start the Backend
+Place the backend/ folder in your XAMPP/WAMP htdocs directory.
+Start Apache and MySQL via XAMPP/WAMP.
+Access the API at http://localhost/blockchain-auth/backend/api/.
+🌐 Interacting with MetaMask
+Install MetaMask in your browser.
+Connect to Localhost 8545 (Chain ID: 31337).
+Import Hardhat accounts using private keys (e.g., SuperAdmin, User5).
+
+Aditya, [27-03-2025 13:39]
+🛠️ Testing the Contract
+Run tests:
+
+bash
+
+npx hardhat test
+📁 Contract Address
+After deployment, find the address in frontend/src/deployed.json:
+
+json
+
+
+{
+  "Auth": "0xYOUR_DEPLOYED_CONTRACT_ADDRESS"
+}
+🚀 Usage
+Home Page
+Connect your MetaMask wallet.
+Register with a username (e.g., "user5").
+Log in by signing a message and entering the OTP.
+Profile Page
+View your wallet address, username, role, and last login.
+Update your username.
+Logs Page
+View immutable audit logs (registrations, logins, role changes).
+Admin Dashboard
+Log in as SuperAdmin (0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266).
+Assign/revoke admin roles, delete users, and view logs.
+Additional Pages
+Navigate to /about, /contact, and /privacypolicy via the taskbar.
+🎥 Demo Plan
+Demo Accounts
+SuperAdmin: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 (username: "superadmin")
+User5: 0x976EA74026E726554dB657fA54763abd0C3a0aa9 (username: "user5")
+Steps
+Setup:
+Start Hardhat: npx hardhat node --import state.json
+Start frontend: cd frontend && npm start
+Start backend via XAMPP/WAMP.
+Connect MetaMask to localhost:8545.
+Home Page:
+Connect User5’s wallet, register as "user5", and log in with OTP.
+Show successful login notification.
+Profile Page:
+Navigate to /profile.
+Display user details and update username to "user5_new".
+Logs Page:
+Navigate to /logs.
+Show blockchain-stored logs (e.g., registration, login).
+Admin Dashboard:
+Log in as SuperAdmin.
+Assign Admin role to "user5_new", revoke it, and delete the user.
+Display updated logs.
+Edge Cases:
+Attempt login with an unregistered wallet (show error).
+Try role management as a non-SuperAdmin (show restricted access).
+Saving State
+bash
+
+
+npx hardhat node --export state.json
+Restart with:
+
+bash
+
+
+npx hardhat node --import state.json
+✅ Conclusion
+This project delivers a blockchain-based authentication module for operating systems, featuring:
+
+A React OS-like interface with secure MetaMask authentication.
+Solidity smart contracts for decentralized access control and logging.
+A PHP/MySQL backend for off-chain data management.
+Full transparency and security via Ethereum blockchain.
+👨‍💻 Author
+Built with ❤️ by Aditya,Rajeshwari,Vanshika
+
+📧 Contact
+GitHub: adityaprakashiu
+Email: adityaprakashiu@gmail.com
+Twitter: @truthbyliar
+
