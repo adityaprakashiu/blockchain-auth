@@ -1,13 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaLock } from 'react-icons/fa';
-import Footer from './components/FooterTaskbar';  // ✅ Correct import path
+import Footer from './components/FooterTaskbar';  // This is Correct import path
 
 const Contact = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
       
-      {/* Header */}
+      {/* Header Section*/}
       <header className="bg-gradient-to-r from-gray-800 to-black text-white p-4 flex justify-between items-center shadow-md">
         <div className="flex items-center space-x-2">
           <FaLock className="text-xl" />
@@ -55,7 +55,7 @@ const Contact = () => {
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer Section */}
       <Footer />
     </div>
   );
