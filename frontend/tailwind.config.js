@@ -1,24 +1,14 @@
-/** @type {import('tailwindcss').Config} */
+// tailwind.config.js
+
+const plugin = require("tailwindcss/plugin");
+
 module.exports = {
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-    "./public/index.html"
-  ],
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
-    extend: {
-      colors: {
-        indigo: {
-          950: '#1e1b4b', // Used for header and footer background
-          900: '#312e81', // Used in the main gradient and input background
-        },
-        blue: {
-          900: '#1e3a8a', // Used in the main gradient
-        },
-      },
-    },
+    extend: {},
   },
-  plugins: [],
-  corePlugins: {
-    backdropFilter: true, // Enable backdrop-blur-lg for glassmorphism effect
-  },
+  plugins: [
+    // Remove or comment out this line 👇
+    // require('tailwind-scrollbar'),
+  ],
 };

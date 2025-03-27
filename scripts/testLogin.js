@@ -1,57 +1,32 @@
 const { ethers } = require("hardhat");
-const deployed = require("../frontend/src/deployed.json");
 
 async function main() {
-  const userAddress = "0x976EA74026E726554dB657fA54763abd0C3a0aa9";
-  const message = "Sign this message to log in: 1742838565786";
+  console.log("Ethers version:", ethers.version);
+  const [deployer, user] = await ethers.getSigners();
+  console.log("Deployer address:", deployer.address);
+  console.log("User address:", user.address);
 
-  await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [userAddress],
-  });
+  const contractAddress = "0x624Efa452332DE8959fB54727dCEc955db326aB0";
+  const authContract = await ethers.getContractAt("Auth", contractAddress, deployer);
+  console.log("Contract address:", authContract.address);
 
-  const userSigner = await hre.ethers.getSigner(userAddress);
-  const signature = await userSigner.signMessage(message);
+  const message = "Login attempt message";
+  
+  // Explicitly using the correct methods from ethers.utils
+  const messageHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(message));
+  console.log("Message hash:", messageHash);
+
+  const signature = await user.signMessage(ethers.utils.arrayify(messageHash));
   console.log("Signature:", signature);
 
-  const contract = await ethers.getContractAt("Auth", deployed.Auth, userSigner);
-  console.log("Calling attemptLogin on contract at:", deployed.Auth);
-
-  try {
-    const tx = await contract.attemptLogin(message, signature);
-    const receipt = await tx.wait();
-    console.log("Transaction confirmed:", receipt.hash); // Fix: Use receipt.hash
-
-    const loginEvent = receipt.logs
-      .map((log) => {
-        try {
-          return contract.interface.parseLog(log);
-        } catch (e) {
-          return null;
-        }
-      })
-      .find((log) => log && log.name === "LoginAttempt");
-
-    if (loginEvent) {
-      console.log("LoginAttempt event:", {
-        user: loginEvent.args.user,
-        success: loginEvent.args.success,
-        message: loginEvent.args.message,
-      });
-    }
-  } catch (err) {
-    console.error("Login error:", err.message);
-  } finally {
-    await hre.network.provider.request({
-      method: "hardhat_stopImpersonatingAccount",
-      params: [userAddress],
-    });
-  }
+  console.log("Attempting login...");
+  const tx = await authContract.attemptLogin(message, signature);
+  console.log("Transaction hash:", tx.hash);
+  await tx.wait();
+  console.log("Login successful");
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

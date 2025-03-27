@@ -2,11 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaLock, FaGithub, FaTwitter } from 'react-icons/fa';
 import { ethers } from 'ethers';
-import AuthABI from './abi/AuthABI.json';
-import deployed from './deployed.json';
-
-const contractAddress = deployed.Auth;
-const contractABI = AuthABI.abi;
+import AuthABI from './abi/AuthABI.json'; // Import the ABI
 
 const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
   const [loginAttempts, setLoginAttempts] = useState([]);
@@ -15,15 +11,14 @@ const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
   const [error, setError] = useState('');
   const [userAddress, setUserAddress] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isFetchingLogs, setIsFetchingLogs] = useState(false);
+
+  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Replace with the address from deployed.json
+  const contractABI = AuthABI; // Use the imported ABI
 
   useEffect(() => {
     const fetchLogs = async () => {
-      setIsFetchingLogs(true);
-      setError('');
       try {
         if (!window.ethereum) throw new Error('MetaMask is not installed');
-        if (!fullWalletAddress) throw new Error('Please connect your wallet first');
 
         const provider = new ethers.BrowserProvider(window.ethereum);
         const contract = new ethers.Contract(contractAddress, contractABI, provider);
@@ -31,7 +26,6 @@ const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
         const latestBlock = await provider.getBlockNumber();
         const fromBlock = latestBlock > 0 ? 0 : latestBlock;
 
-        // Fetch LoginAttempt events
         const loginFilter = contract.filters.LoginAttempt();
         const loginEvents = await contract.queryFilter(loginFilter, fromBlock, 'latest');
         const formattedLoginEvents = await Promise.all(
@@ -48,18 +42,15 @@ const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
         );
         setLoginAttempts(formattedLoginEvents);
 
-        // Fetch UserRegistered events
         const registerFilter = contract.filters.UserRegistered();
         const registerEvents = await contract.queryFilter(registerFilter, fromBlock, 'latest');
         const formattedRegisterEvents = await Promise.all(
           registerEvents.map(async (event) => {
             const block = await provider.getBlock(event.blockNumber);
-            // Fetch the user's role directly from getUserDetails
-            const userDetails = await contract.getUserDetails(event.args.user);
             return {
               user: event.args.user,
               username: event.args.username,
-              role: userDetails[2], // Role is the third element in the returned tuple
+              role: event.args.role === 0 ? 'User' : event.args.role === 1 ? 'Admin' : 'SuperAdmin',
               timestamp: block.timestamp,
               blockNumber: event.blockNumber,
             };
@@ -67,7 +58,6 @@ const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
         );
         setUserRegistrations(formattedRegisterEvents);
 
-        // Fetch RoleChanged events
         const roleChangeFilter = contract.filters.RoleChanged();
         const roleChangeEvents = await contract.queryFilter(roleChangeFilter, fromBlock, 'latest');
         const formattedRoleChangeEvents = await Promise.all(
@@ -75,7 +65,7 @@ const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
             const block = await provider.getBlock(event.blockNumber);
             return {
               user: event.args.user,
-              newRole: event.args.newRole,
+              newRole: event.args.newRole === 0 ? 'User' : event.args.newRole === 1 ? 'Admin' : 'SuperAdmin',
               timestamp: block.timestamp,
               blockNumber: event.blockNumber,
             };
@@ -83,23 +73,12 @@ const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
         );
         setRoleChanges(formattedRoleChangeEvents);
       } catch (err) {
-        console.error('Failed to fetch logs:', err);
-        if (err.code === 'NETWORK_ERROR') {
-          setError('Failed to fetch logs: Network error. Please check your connection.');
-        } else if (err.message.includes('could not decode')) {
-          setError('Failed to fetch logs: Contract ABI mismatch. Please redeploy the contract and update the ABI.');
-        } else {
-          setError('Failed to fetch logs: ' + err.message);
-        }
-      } finally {
-        setIsFetchingLogs(false);
+        setError('Failed to fetch logs: ' + err.message);
       }
     };
 
-    if (fullWalletAddress) {
-      fetchLogs();
-    }
-  }, [fullWalletAddress]);
+    fetchLogs();
+  }, []);
 
   const handleAssignAdmin = async () => {
     setIsLoading(true);
@@ -113,12 +92,15 @@ const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, contractABI, signer);
 
-      const tx = await contract.changeUserRole(userAddress, "Admin", { gasLimit: 300000 });
+      const gasPrice = await provider.getFeeData();
+      const tx = await contract.assignAdmin(userAddress, {
+        gasLimit: 300000,
+        gasPrice: gasPrice.gasPrice,
+      });
       await tx.wait();
       alert('Admin role assigned successfully!');
       setUserAddress('');
 
-      // Refresh role change logs
       const fetchLogs = async () => {
         const latestBlock = await provider.getBlockNumber();
         const fromBlock = latestBlock > 0 ? 0 : latestBlock;
@@ -130,7 +112,7 @@ const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
             const block = await provider.getBlock(event.blockNumber);
             return {
               user: event.args.user,
-              newRole: event.args.newRole,
+              newRole: event.args.newRole === 0 ? 'User' : event.args.newRole === 1 ? 'Admin' : 'SuperAdmin',
               timestamp: block.timestamp,
               blockNumber: event.blockNumber,
             };
@@ -143,8 +125,6 @@ const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
       console.error('Detailed error:', err);
       if (err.reason) {
         setError(`Failed to assign admin role: ${err.reason}`);
-      } else if (err.message.includes('execution reverted')) {
-        setError('Failed to assign admin role: Transaction reverted. Ensure you have the required permissions.');
       } else {
         setError('Failed to assign admin role: ' + err.message);
       }
@@ -165,12 +145,15 @@ const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, contractABI, signer);
 
-      const tx = await contract.changeUserRole(userAddress, "User", { gasLimit: 300000 });
+      const gasPrice = await provider.getFeeData();
+      const tx = await contract.revokeAdminRole(userAddress, {
+        gasLimit: 300000,
+        gasPrice: gasPrice.gasPrice,
+      });
       await tx.wait();
       alert('Admin role revoked successfully!');
       setUserAddress('');
 
-      // Refresh role change logs
       const fetchLogs = async () => {
         const latestBlock = await provider.getBlockNumber();
         const fromBlock = latestBlock > 0 ? 0 : latestBlock;
@@ -182,7 +165,7 @@ const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
             const block = await provider.getBlock(event.blockNumber);
             return {
               user: event.args.user,
-              newRole: event.args.newRole,
+              newRole: event.args.newRole === 0 ? 'User' : event.args.newRole === 1 ? 'Admin' : 'SuperAdmin',
               timestamp: block.timestamp,
               blockNumber: event.blockNumber,
             };
@@ -195,8 +178,6 @@ const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
       console.error('Detailed error:', err);
       if (err.reason) {
         setError(`Failed to revoke admin role: ${err.reason}`);
-      } else if (err.message.includes('execution reverted')) {
-        setError('Failed to revoke admin role: Transaction reverted. Ensure you have the required permissions.');
       } else {
         setError('Failed to revoke admin role: ' + err.message);
       }
@@ -212,45 +193,23 @@ const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
       if (!window.ethereum) throw new Error('MetaMask is not installed');
       if (!fullWalletAddress) throw new Error('Please connect your wallet first');
       if (!ethers.isAddress(userAddress)) throw new Error('Invalid user address');
-  
+
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, contractABI, signer);
-  
-      const tx = await contract.deleteUser(userAddress, { gasLimit: 300000 });
+
+      const gasPrice = await provider.getFeeData();
+      const tx = await contract.deleteUser(userAddress, {
+        gasLimit: 300000,
+        gasPrice: gasPrice.gasPrice,
+      });
       await tx.wait();
       alert('User deleted successfully!');
       setUserAddress('');
-  
-      // Refresh user registrations to reflect the deletion
-      const fetchLogs = async () => {
-        const latestBlock = await provider.getBlockNumber();
-        const fromBlock = latestBlock > 0 ? 0 : latestBlock;
-  
-        const registerFilter = contract.filters.UserRegistered();
-        const registerEvents = await contract.queryFilter(registerFilter, fromBlock, 'latest');
-        const formattedRegisterEvents = await Promise.all(
-          registerEvents.map(async (event) => {
-            const block = await provider.getBlock(event.blockNumber);
-            const userDetails = await contract.getUserDetails(event.args.user);
-            return {
-              user: event.args.user,
-              username: event.args.username,
-              role: userDetails[2],
-              timestamp: block.timestamp,
-              blockNumber: event.blockNumber,
-            };
-          })
-        );
-        setUserRegistrations(formattedRegisterEvents);
-      };
-      fetchLogs();
     } catch (err) {
       console.error('Detailed error:', err);
       if (err.reason) {
         setError(`Failed to delete user: ${err.reason}`);
-      } else if (err.message.includes('execution reverted')) {
-        setError('Failed to delete user: Transaction reverted. Ensure you have the required permissions.');
       } else {
         setError('Failed to delete user: ' + err.message);
       }
@@ -258,27 +217,6 @@ const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
       setIsLoading(false);
     }
   };
-
-  if (!fullWalletAddress) {
-    return (
-      <div className="flex flex-col min-h-screen bg-gray-900">
-        <header className="bg-gray-800 text-gray-200 p-4 flex justify-between items-center shadow-md">
-          <div className="flex items-center space-x-2">
-            <FaLock className="text-xl text-gray-400" />
-            <h1 className="text-xl font-medium">Admin Dashboard</h1>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Link to="/" className="text-sm hover:text-gray-200 transition-colors duration-200">
-              Back to Home
-            </Link>
-          </div>
-        </header>
-        <div className="flex flex-col items-center justify-center flex-grow p-6">
-          <p className="text-gray-200">Please connect your wallet to access the Admin Dashboard.</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-900">
@@ -343,105 +281,81 @@ const AdminDashboard = ({ walletAddress, fullWalletAddress }) => {
 
           <h3 className="text-xl font-medium text-gray-200 mb-4">Audit Logs</h3>
 
-          {isFetchingLogs ? (
-            <p className="text-gray-200 text-center mb-4">Fetching logs...</p>
-          ) : (
-            <>
-              <h4 className="text-lg font-medium text-gray-200 mb-2">Login Attempts</h4>
-              <div className="overflow-x-auto mb-8">
-                <table className="w-full text-gray-200">
-                  <thead>
-                    <tr className="bg-gray-700">
-                      <th className="p-3 text-left">User</th>
-                      <th className="p-3 text-left">Success</th>
-                      <th className="p-3 text-left">Message</th>
-                      <th className="p-3 text-left">Timestamp</th>
-                      <th className="p-3 text-left">Block</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loginAttempts.length > 0 ? (
-                      loginAttempts.map((log, index) => (
-                        <tr key={index} className="border-b border-gray-600">
-                          <td className="p-3">{log.user}</td>
-                          <td className="p-3">{log.success ? 'Yes' : 'No'}</td>
-                          <td className="p-3">{log.message}</td>
-                          <td className="p-3">{new Date(log.timestamp * 1000).toLocaleString()}</td>
-                          <td className="p-3">{log.blockNumber}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="5" className="p-3 text-center">No login attempts found.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+          <h4 className="text-lg font-medium text-gray-200 mb-2">Login Attempts</h4>
+          <div className="overflow-x-auto mb-8">
+            <table className="w-full text-gray-200">
+              <thead>
+                <tr className="bg-gray-700">
+                  <th className="p-3 text-left">User</th>
+                  <th className="p-3 text-left">Success</th>
+                  <th className="p-3 text-left">Message</th>
+                  <th className="p-3 text-left">Timestamp</th>
+                  <th className="p-3 text-left">Block</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loginAttempts.map((log, index) => (
+                  <tr key={index} className="border-b border-gray-600">
+                    <td className="p-3">{log.user}</td>
+                    <td className="p-3">{log.success ? 'Yes' : 'No'}</td>
+                    <td className="p-3">{log.message}</td>
+                    <td className="p-3">{new Date(log.timestamp * 1000).toLocaleString()}</td>
+                    <td className="p-3">{log.blockNumber}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-              <h4 className="text-lg font-medium text-gray-200 mb-2">User Registrations</h4>
-              <div className="overflow-x-auto mb-8">
-                <table className="w-full text-gray-200">
-                  <thead>
-                    <tr className="bg-gray-700">
-                      <th className="p-3 text-left">User</th>
-                      <th className="p-3 text-left">Username</th>
-                      <th className="p-3 text-left">Role</th>
-                      <th className="p-3 text-left">Timestamp</th>
-                      <th className="p-3 text-left">Block</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {userRegistrations.length > 0 ? (
-                      userRegistrations.map((log, index) => (
-                        <tr key={index} className="border-b border-gray-600">
-                          <td className="p-3">{log.user}</td>
-                          <td className="p-3">{log.username}</td>
-                          <td className="p-3">{log.role}</td>
-                          <td className="p-3">{new Date(log.timestamp * 1000).toLocaleString()}</td>
-                          <td className="p-3">{log.blockNumber}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="5" className="p-3 text-center">No user registrations found.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+          <h4 className="text-lg font-medium text-gray-200 mb-2">User Registrations</h4>
+          <div className="overflow-x-auto mb-8">
+            <table className="w-full text-gray-200">
+              <thead>
+                <tr className="bg-gray-700">
+                  <th className="p-3 text-left">User</th>
+                  <th className="p-3 text-left">Username</th>
+                  <th className="p-3 text-left">Role</th>
+                  <th className="p-3 text-left">Timestamp</th>
+                  <th className="p-3 text-left">Block</th>
+                </tr>
+              </thead>
+              <tbody>
+                {userRegistrations.map((log, index) => (
+                  <tr key={index} className="border-b border-gray-600">
+                    <td className="p-3">{log.user}</td>
+                    <td className="p-3">{log.username}</td>
+                    <td className="p-3">{log.role}</td>
+                    <td className="p-3">{new Date(log.timestamp * 1000).toLocaleString()}</td>
+                    <td className="p-3">{log.blockNumber}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-              <h4 className="text-lg font-medium text-gray-200 mb-2">Role Changes</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full text-gray-200">
-                  <thead>
-                    <tr className="bg-gray-700">
-                      <th className="p-3 text-left">User</th>
-                      <th className="p-3 text-left">New Role</th>
-                      <th className="p-3 text-left">Timestamp</th>
-                      <th className="p-3 text-left">Block</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {roleChanges.length > 0 ? (
-                      roleChanges.map((log, index) => (
-                        <tr key={index} className="border-b border-gray-600">
-                          <td className="p-3">{log.user}</td>
-                          <td className="p-3">{log.newRole}</td>
-                          <td className="p-3">{new Date(log.timestamp * 1000).toLocaleString()}</td>
-                          <td className="p-3">{log.blockNumber}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="4" className="p-3 text-center">No role changes found.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
+          <h4 className="text-lg font-medium text-gray-200 mb-2">Role Changes</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-gray-200">
+              <thead>
+                <tr className="bg-gray-700">
+                  <th className="p-3 text-left">User</th>
+                  <th className="p-3 text-left">New Role</th>
+                  <th className="p-3 text-left">Timestamp</th>
+                  <th className="p-3 text-left">Block</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roleChanges.map((log, index) => (
+                  <tr key={index} className="border-b border-gray-600">
+                    <td className="p-3">{log.user}</td>
+                    <td className="p-3">{log.newRole}</td>
+                    <td className="p-3">{new Date(log.timestamp * 1000).toLocaleString()}</td>
+                    <td className="p-3">{log.blockNumber}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
