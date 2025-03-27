@@ -2,11 +2,20 @@ require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
 module.exports = {
-  solidity: {
-    version: "0.8.28",
-    settings: {
-      optimizer: { enabled: true, runs: 200 }
-    }
+
+  solidity: "0.8.28",
+  defaultNetwork: "hardhat", 
+  networks: {
+
+    hardhat: {
+      chainId: 31337, 
+    },
+    
+    localhost: {
+      url: "http://127.0.0.1:8545", 
+      chainId: 31337, 
+    },
+      c8a9aaad0c05bf77f146e77641e9a5b38e476
   },
   defaultNetwork: "localhost", // Changed to localhost
   networks: {
