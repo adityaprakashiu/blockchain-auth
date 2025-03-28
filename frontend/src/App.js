@@ -10,10 +10,11 @@ import Logs from './Logs';
 import FooterTaskbar from './components/FooterTaskbar';
 import deployedContracts from "./deployed.json";
 
+
+
 const Home = lazy(() => import("./Home.jsx"));
 const Settings = lazy(() => import("./components/Settings.jsx"));
 const Profile = lazy(() => import("./components/Profile.jsx"));
-
 const contractAddress = deployedContracts.Auth;
 const contractABI = deployedContracts.abi;
 
@@ -30,6 +31,7 @@ const App = () => {
 
   useEffect(() => {
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
+
     if (loggedIn && !fullWalletAddress) {
       connectWallet();
     }
@@ -39,21 +41,27 @@ const App = () => {
     const id = Date.now();
     setNotifications((prev) => [...prev, { id, message, type }]);
     setTimeout(() => setNotifications((prev) => prev.filter((notif) => notif.id !== id)), 3000);
+
   };
 
   const connectWallet = async () => {
     if (!window.ethereum) {
+
       addNotification("MetaMask is not installed.", "error");
       return;
+
     }
     if (isConnecting) return;
+
     setIsConnecting(true);
 
     try {
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+
       if (accounts.length === 0) {
         addNotification("No accounts found. Please unlock MetaMask.", "error");
         return;
+
       }
 
       const selectedAccount = accounts[0];
@@ -73,6 +81,7 @@ const App = () => {
     } finally {
       setIsConnecting(false);
     }
+
   };
 
   const disconnectWallet = () => {
@@ -86,7 +95,10 @@ const App = () => {
       setGeneratedOtp("");
       localStorage.removeItem("isLoggedIn");
       addNotification("Wallet disconnected.", "success");
+
+
     }
+
   };
 
   const registerUser = async (username) => {
@@ -104,7 +116,7 @@ const App = () => {
       await tx.wait();
 
       addNotification("User registered successfully!", "success");
-      await connectWallet(); // Refresh user details
+      await connectWallet(); // Refreshs the user details
     } catch (err) {
       addNotification(`Registration failed: ${err.message}`, "error");
     }
@@ -203,6 +215,9 @@ const App = () => {
       </div>
     </Router>
   );
+
 };
 
+
 export default App;
+
