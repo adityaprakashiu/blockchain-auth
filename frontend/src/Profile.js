@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { FaLock, FaGithub, FaTwitter } from 'react-icons/fa';
 import { ethers } from 'ethers';
 import AuthABI from './abi/AuthABI.json'; // Import the ABI
-
 const Profile = ({ walletAddress, fullWalletAddress }) => {
   const [username, setUsername] = useState('');
   const [role, setRole] = useState('');
@@ -14,7 +13,6 @@ const Profile = ({ walletAddress, fullWalletAddress }) => {
 
   const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Replace with the address from deployed.json
   const contractABI = AuthABI; // Use the imported ABI
-
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
@@ -32,7 +30,6 @@ const Profile = ({ walletAddress, fullWalletAddress }) => {
         setError('Failed to fetch user details: ' + err.message);
       }
     };
-
     fetchUserDetails();
   }, [fullWalletAddress]);
 
@@ -50,7 +47,6 @@ const Profile = ({ walletAddress, fullWalletAddress }) => {
 
       const tx = await contract.registerUser(newUsername, { gasLimit: 300000 });
       await tx.wait();
-
       setUsername(newUsername);
       setNewUsername('');
       alert('Username updated successfully!');
@@ -65,7 +61,6 @@ const Profile = ({ walletAddress, fullWalletAddress }) => {
       setIsLoading(false);
     }
   };
-
   return (
     <div className="flex flex-col min-h-screen bg-gray-900">
       <header className="bg-gray-800 text-gray-200 p-4 flex justify-between items-center shadow-md">
@@ -82,7 +77,6 @@ const Profile = ({ walletAddress, fullWalletAddress }) => {
           )}
         </div>
       </header>
-
       <div className="flex flex-col items-center justify-center flex-grow p-6">
         <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-sm">
           <h2 className="text-2xl font-semibold text-center mb-6 text-gray-200">Profile</h2>
@@ -98,6 +92,7 @@ const Profile = ({ walletAddress, fullWalletAddress }) => {
             </p>
           </div>
 
+
           <h3 className="text-lg font-medium text-gray-200 mb-2">Update Username</h3>
           <div className="mb-4">
             <input
@@ -108,6 +103,8 @@ const Profile = ({ walletAddress, fullWalletAddress }) => {
               placeholder="Enter new username"
               aria-label="Enter new username"
             />
+
+
           </div>
           <button
             onClick={handleUpdateUsername}
@@ -117,9 +114,10 @@ const Profile = ({ walletAddress, fullWalletAddress }) => {
           >
             {isLoading ? 'Updating...' : 'Update Username'}
           </button>
-        </div>
-      </div>
 
+        </div>
+
+      </div>
       <footer className="bg-gray-800 text-gray-400 p-4 shadow-md">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
           <div className="text-sm">
