@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import FooterTaskbar from "./components/FooterTaskbar";  // Footer without walletAddress
+import FooterTaskbar from "./components/FooterTaskbar";  // This is the Footer without walletAddress
 import { ethers } from "ethers";
-import { FaLock } from "react-icons/fa";  // Lock icon
-
+import { FaLock } from "react-icons/fa";  //For the Lock icon
 const Home = ({
   connectWallet,
   walletAddress,
@@ -23,19 +22,18 @@ const Home = ({
   const [otpInput, setOtpInput] = useState("");
   const [networkName, setNetworkName] = useState("");
 
-  // Handle network changes
+  // Handle the network changes
   useEffect(() => {
     if (window.ethereum) {
       const handleChainChanged = (chainId) => {
         updateNetworkName(chainId);
       };
-
       window.ethereum.on("chainChanged", handleChainChanged);
       return () => window.ethereum.removeListener("chainChanged", handleChainChanged);
     }
   }, []);
 
-  // Update network name
+  // Updates the network name
   const updateNetworkName = async (chainId) => {
     const id = chainId || (await window.ethereum.request({ method: "eth_chainId" }));
     setNetworkName(
@@ -45,7 +43,6 @@ const Home = ({
       `Unknown Network (${id})`
     );
   };
-
   // Handle user registration
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -60,7 +57,6 @@ const Home = ({
       console.error("Registration error:", error);
     }
   };
-
   // Handle login submission
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -81,8 +77,6 @@ const Home = ({
       return "0.0000";  // Fallback if there's an issue
     }
   };
-
-
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
       
@@ -172,7 +166,7 @@ const Home = ({
                     Enter your OTP
                   </h3>
 
-                  {/* ✅ Display the OTP */}
+                  {/*Display the OTP */}
                   <p className="text-gray-400 text-center mb-2">
                     <strong>Your OTP:</strong> 
                     <span className="text-green-400"> {otpInput}</span>
