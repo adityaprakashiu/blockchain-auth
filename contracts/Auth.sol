@@ -12,8 +12,10 @@ contract Auth {
     struct User {
         string username;
         address userAddress;
+
         Role role;  
         uint256 lastLogin;
+
         bool isRegistered;
     }
 
@@ -23,21 +25,24 @@ contract Auth {
     
     address public superAdmin;
 
-    // Events for transparency
+    // Event for transparency
     event UserRegistered(address indexed user, string username);
+
     event UsernameUpdated(address indexed user, string newUsername);
     event LoginAttempt(address indexed user, bool success, string message);
+
     event RoleChanged(address indexed user, Role newRole);
     event UserDeleted(address indexed user);
+
     event UserDetailsRetrieved(address indexed user, string username, Role role, uint256 lastLogin);
 
     constructor() {
         superAdmin = msg.sender;
         
-        // Assign SuperAdmin role during deployment
+        // Assign the superAdmin role during deployment
         users[msg.sender] = User("superadmin", msg.sender, Role.SuperAdmin, block.timestamp, true);
         
-        // Add SuperAdmin to user list
+        // Add the superAdmin to user list
         userAddresses.push(msg.sender);
         userIndex[msg.sender] = 0;
         
@@ -50,7 +55,7 @@ contract Auth {
         _;
     }
 
-    // Register a new user
+    // Register the new user
     function registerUser(string memory _username) public {
         require(!users[msg.sender].isRegistered, "User already registered");
         require(bytes(_username).length >= 3, "Username must be at least 3 characters");
@@ -64,7 +69,9 @@ contract Auth {
         emit UserRegistered(msg.sender, _username);
     }
 
-    // Update username
+    // Update the username
+
+
     function updateUsername(string memory _newUsername) public {
         require(users[msg.sender].isRegistered, "User not registered");
         require(bytes(_newUsername).length >= 3, "Username must be at least 3 characters");
@@ -79,7 +86,8 @@ contract Auth {
 
         bytes32 messageHash = keccak256(abi.encodePacked(_message));
 
-        // Manually add the Ethereum signed message prefix to the message hash
+        // Manually add Ethereum signed message prefix to the message hash
+
         bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
 
         address signer = ECDSA.recover(ethSignedMessageHash, _signature);
@@ -94,7 +102,7 @@ contract Auth {
         return true;
     }
 
-    // Get user details
+    // Get the user detail
     function getUserDetails(address _userAddress) public view returns (string memory, address, Role, uint256) {
         User memory user = users[_userAddress];
         require(user.isRegistered, "User not found");
@@ -113,6 +121,7 @@ contract Auth {
     // Delete user with O(1) complexity
     function deleteUser(address _userAddress) public onlySuperAdmin {
         require(users[_userAddress].isRegistered, "User not registered");
+        
         require(_userAddress != superAdmin, "Cannot delete SuperAdmin");
 
         uint256 index = userIndex[_userAddress];
